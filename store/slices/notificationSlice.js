@@ -1,11 +1,37 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { initialNotifications } from '../../data/notifications';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { notificationApi } from '../../services/notificationApi';
 import { EVENT_CATEGORY_MAP } from '../../constants/notificationTypes';
+
+export const fetchNotificationsThunk = createAsyncThunk('notifications/fetch', async (page = 1, { getState, rejectWithValue }) => {
+  try {
+    const token = getState().auth.token;
+    if (!token) throw new Error('Please login to view notifications');
+    return { ...await notificationApi.list(token, page), page };
+  } catch (error) { return rejectWithValue(error.message); }
+});
+
+export const normalizeNotification = (item) => ({
+  id: item.id,
+  title: item.title,
+  description: item.body || '',
+  watched: Boolean(item.is_read),
+  createdAt: item.sent_at,
+  time: item.sent_at ? new Date(item.sent_at).toLocaleString() : '',
+  eventKey: item.metadata?.eventKey || item.type,
+  category: item.metadata?.category || EVENT_CATEGORY_MAP[item.type] || 'info',
+  deepLink: item.metadata?.deepLink,
+  data: item.metadata || {},
+});
 
 const notificationSlice = createSlice({
   name: 'notifications',
   initialState: {
-    list: initialNotifications,
+    list: [],
+    loading: false,
+    error: null,
+    page: 0,
+    hasMore: false,
+    requestId: null,
     unreadCount: 0,
   },
   reducers: {
@@ -47,6 +73,25 @@ const notificationSlice = createSlice({
       state.list = [];
       state.unreadCount = 0;
     },
+  },
+  extraReducers: builder => {
+    builder.addCase(fetchNotificationsThunk.pending, (state, action) => {
+      state.loading = true;
+      state.error = null;
+      state.requestId = action.meta.requestId;
+    }).addCase(fetchNotificationsThunk.fulfilled, (state, action) => {
+      if (state.requestId !== action.meta.requestId) return;
+      const items = (action.payload.data || []).map(normalizeNotification);
+      state.list = action.payload.page === 1 ? items : [...state.list, ...items.filter(item => !state.list.some(existing => existing.id === item.id))];
+      state.unreadCount = action.payload.unread_count;
+      state.page = action.payload.page;
+      state.hasMore = items.length === 20;
+      state.loading = false;
+    }).addCase(fetchNotificationsThunk.rejected, (state, action) => {
+      if (state.requestId !== action.meta.requestId) return;
+      state.loading = false;
+      state.error = action.payload;
+    }).addCase('auth/logout', () => ({ list: [], unreadCount: 0, loading: false, error: null, page: 0, hasMore: false, requestId: null }));
   },
 });
 

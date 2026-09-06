@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import appSlice from './slices/appSlice';
 import authSlice from './slices/authSlice';
 import propertiesSlice from './slices/propertiesSlice';
@@ -14,8 +14,7 @@ import recentProjectsSlice from './slices/recentProjectsSlice';
 import locationSlice from './slices/locationSlice';
 
 
-export const store = configureStore({
-        reducer: {
+const appReducer = combineReducers({
                 app: appSlice,
                 auth: authSlice,
                 properties: propertiesSlice,
@@ -30,5 +29,15 @@ export const store = configureStore({
                 recentProjects: recentProjectsSlice,
                 location: locationSlice,
 
+});
+
+export const store = configureStore({
+        reducer: (state, action) => {
+                if (action.type === 'auth/logout') {
+                        const clean = appReducer(undefined, { type: '@@INIT' });
+                        clean.auth = authSlice(state?.auth, action);
+                        return clean;
+                }
+                return appReducer(state, action);
         },
 });

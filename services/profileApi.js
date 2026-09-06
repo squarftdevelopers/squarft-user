@@ -3,31 +3,15 @@ import { BASE_URL } from './config';
 export const profileApi = {
   getUserProfile: async (token) => {
     try {
-      console.log('👤 Fetching user profile...');
-      
       const response = await fetch(`${BASE_URL}/api/v1/profile/me`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      console.log('📡 Profile API Response Status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('❌ Profile API Error:', errorText);
-        throw new Error(`Failed to fetch profile: ${response.status}`);
-      }
-
       const data = await response.json();
-      console.log('✅ Profile data received');
-      
+      if (!response.ok) throw new Error(data.message || 'Unable to load your profile');
+      if (!data.data?.user) throw new Error('Profile data is unavailable');
       return data.data;
     } catch (error) {
-      console.error('❌ Error fetching profile:', error);
-      throw error;
+      throw new Error(error.message === 'Network request failed' ? 'Unable to connect. Please try again.' : error.message);
     }
   },
 

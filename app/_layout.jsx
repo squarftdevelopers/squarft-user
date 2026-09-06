@@ -17,6 +17,7 @@ import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold 
 import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { PublicSans_400Regular, PublicSans_600SemiBold, PublicSans_700Bold, PublicSans_800ExtraBold } from "@expo-google-fonts/public-sans";
 import { store } from "../store/store";
+import AppActivityTracker from "../components/AppActivityTracker";
 import PushNotificationRegistrar from "../components/PushNotificationRegistrar";
 import FilterModal from "../components/FilterModal";
 import BiometricLockGate from "../components/BiometricLockGate";
@@ -136,6 +137,7 @@ export default function RootLayout() {
                     <BottomSheetModalProvider>
                         <AuthHydrator />
                         <ActivityTrackerHydrator />
+                        <AppActivityTracker />
                         <PushNotificationRegistrar />
                         <FilterModal />
                         <BiometricLockGate>

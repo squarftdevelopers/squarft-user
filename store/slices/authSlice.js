@@ -25,9 +25,9 @@ export const logoutThunk = createAsyncThunk('auth/logout', async (_, { dispatch 
 });
 
 
-export const registerThunk = createAsyncThunk('auth/register', async ({ verified_token, first_name, last_name }, { rejectWithValue }) => {
+export const registerThunk = createAsyncThunk('auth/register', async ({ verified_token, first_name, last_name, branch_id }, { rejectWithValue }) => {
     try {
-        const response = await authApi.register(verified_token, first_name, last_name);
+        const response = await authApi.register(verified_token, first_name, last_name, branch_id);
         await saveAuthSession({ token: response.token, user: response.user });
         return response;
     } catch (e) {
@@ -38,6 +38,14 @@ export const registerThunk = createAsyncThunk('auth/register', async ({ verified
 export const sendOtpThunk = createAsyncThunk('auth/sendOtp', async ({ phone, purpose }, { rejectWithValue }) => {
     try {
         return await authApi.sendOtp(phone, purpose);
+    } catch (e) {
+        return rejectWithValue(e.message);
+    }
+});
+
+export const startLoginThunk = createAsyncThunk('auth/startLogin', async ({ phone }, { rejectWithValue }) => {
+    try {
+        return await authApi.startLogin(phone);
     } catch (e) {
         return rejectWithValue(e.message);
     }
@@ -91,6 +99,8 @@ const authSlice = createSlice({
     initialState: {
         name: '',
         fullName: '',
+        branchId: null,
+        branchName: '',
         email: '',
         mobile: '',
         password: '',
@@ -106,11 +116,18 @@ const authSlice = createSlice({
         token: null,
         user: null,
         profile: null,
+        profileLoading: false,
+        profileError: null,
+        profileRequestId: null,
         profilePictureLoading: false,
         loading: false,
         error: null,
     },
     reducers: {
+        setBranch: (state, action) => {
+            state.branchId = action.payload?.id || null;
+            state.branchName = action.payload?.name || '';
+        },
         setName: (state, action) => { state.name = action.payload; },
         setFullName: (state, action) => { state.fullName = action.payload; },
         setEmail: (state, action) => { state.email = action.payload; },
@@ -139,11 +156,17 @@ const authSlice = createSlice({
         logout: (state) => {
             state.mobile = '';
             state.fullName = '';
+            state.branchId = null;
+            state.branchName = '';
             state.email = '';
             state.password = '';
             state.token = null;
             state.user = null;
             state.profile = null;
+            state.profileLoading = false;
+            state.profileError = null;
+            state.profileRequestId = null;
+            state.profilePictureLoading = false;
             state.isLoggedIn = false;
             state.error = null;
             state.otpToken = null;
@@ -188,6 +211,26 @@ const authSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+            .addCase(startLoginThunk.pending, (state, action) => {
+                state.loading = true;
+                state.error = null;
+                state.mobile = action.meta.arg.phone;
+                state.fullName = '';
+                state.branchId = null;
+                state.branchName = '';
+                state.otpToken = null;
+                state.verifiedToken = null;
+                state.otp = ['', '', '', '', '', ''];
+            })
+            .addCase(startLoginThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.otpFlow = action.payload.needsRegistration ? 'register' : 'login';
+                state.otpToken = action.payload.otp_token || null;
+            })
+            .addCase(startLoginThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
             // Send OTP
             .addCase(sendOtpThunk.pending, (state) => { state.loading = true; state.error = null; })
             .addCase(sendOtpThunk.fulfilled, (state, action) => {
@@ -219,15 +262,17 @@ const authSlice = createSlice({
                 state.error = action.payload;
             })
             // Fetch Profile
-            .addCase(fetchProfileThunk.pending, (state) => { state.loading = true; state.error = null; })
+            .addCase(fetchProfileThunk.pending, (state, action) => { state.profileLoading = true; state.profileError = null; state.profileRequestId = action.meta.requestId; })
             .addCase(fetchProfileThunk.fulfilled, (state, action) => {
-                state.loading = false;
+                if (state.profileRequestId !== action.meta.requestId) return;
+                state.profileLoading = false;
                 state.profile = action.payload;
-                state.user = action.payload?.user || state.user;
+                state.user = action.payload?.user ? { ...state.user, ...action.payload.user } : state.user;
             })
             .addCase(fetchProfileThunk.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
+                if (state.profileRequestId !== action.meta.requestId) return;
+                state.profileLoading = false;
+                state.profileError = action.payload;
             })
             // Update Profile Picture
             .addCase(updateProfilePictureThunk.pending, (state) => {
@@ -256,7 +301,7 @@ const authSlice = createSlice({
 });
 
 export const {
-    setName, setFullName, setEmail, setMobile, setPassword, setNewPassword, setConfirmPassword,
+    setBranch, setName, setFullName, setEmail, setMobile, setPassword, setNewPassword, setConfirmPassword,
     setOtpDigit, clearOtp, setOtpFlow, setOtpToken, setVerifiedToken, toggleRememberMe,
     setLoggedIn, clearError, clearAuthInputs, logout,
 } = authSlice.actions;

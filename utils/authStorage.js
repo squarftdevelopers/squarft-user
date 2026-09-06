@@ -29,8 +29,8 @@ export async function loadAuthSession() {
 
 export async function clearAuthSession() {
   try {
-    await AsyncStorage.removeItem(AUTH_SESSION_KEY);
-  } catch (error) {
-    console.log("Failed to clear auth session:", error.message);
+    await AsyncStorage.multiRemove([AUTH_SESSION_KEY, '@project_view_trackers', '@squarft_recent_projects']);
+  } catch (_error) {
+    throw new Error('Unable to clear your saved session. Please try again.');
   }
 }

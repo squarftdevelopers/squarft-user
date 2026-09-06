@@ -3,8 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import { useRef, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setOtpDigit, clearOtp, setLoggedIn, clearError, clearAuthInputs } from "../../store/slices/authSlice";
-import { verifyOtpThunk, sendOtpThunk, registerThunk, loginThunk } from "../../store/slices/authSlice";
+import { setOtpDigit, clearOtp, setLoggedIn, clearError, clearAuthInputs , verifyOtpThunk, sendOtpThunk, registerThunk, loginThunk } from "../../store/slices/authSlice";
 import { addNotification } from "../../store/slices/notificationSlice";
 import { NOTIFICATION_EVENTS } from "../../constants/notificationTypes";
 
@@ -12,7 +11,7 @@ const logo = require("../../assets/icons/app-icon.png");
 
 export default function OtpVerification() {
     const dispatch = useDispatch();
-    const { otp, otpFlow, otpToken, mobile, fullName, loading, error } = useSelector((state) => state.auth);
+    const { otp, otpFlow, otpToken, mobile, fullName, branchId, loading, error } = useSelector((state) => state.auth);
     const inputs = useRef([]);
     const autoSubmittedRef = useRef(false);
 
@@ -20,7 +19,9 @@ export default function OtpVerification() {
         dispatch(clearError());
         dispatch(clearAuthInputs());
         autoSubmittedRef.current = false;
-    }, []);
+        const focusTimeout = setTimeout(() => inputs.current[0]?.focus(), 300);
+        return () => clearTimeout(focusTimeout);
+    }, [dispatch]);
 
     const handleChange = (text, index) => {
         const digits = text.replace(/[^0-9]/g, '');
@@ -84,11 +85,12 @@ export default function OtpVerification() {
 
         // otpFlow === 'register'
         const [firstName, ...rest] = fullName.trim().split(/\s+/);
-        const lastName = rest.join(' ') || firstName;
+        const lastName = rest.join(' ');
         const registerResult = await dispatch(registerThunk({
             verified_token: verifiedToken,
             first_name: firstName,
             last_name: lastName,
+            branch_id: branchId,
         }));
 
         if (registerThunk.fulfilled.match(registerResult)) {
@@ -107,13 +109,14 @@ export default function OtpVerification() {
             dispatch(setLoggedIn(true));
             router.replace("/(tabs)/home");
         }
-    }, [otp, otpToken, otpFlow, fullName, dispatch]);
+    }, [otp, otpToken, otpFlow, fullName, branchId, dispatch]);
 
     // Auto-submit once all 6 digits are present (covers paste + OS autofill).
     useEffect(() => {
         const otpString = otp.join('');
         if (otpString.length === 6 && !loading && !autoSubmittedRef.current) {
             autoSubmittedRef.current = true;
+            Keyboard.dismiss();
             handleVerify();
         }
         if (otpString.length < 6) {
@@ -144,7 +147,7 @@ export default function OtpVerification() {
                             <Image source={logo} style={{ width: 110, height: 110, margin: -26,  }} resizeMode="contain" />
                         </View>
                         <Text className="text-white text-[26px] font-manrope-bold mb-5 ">OTP Verification</Text>
-                        <Text className="text-white/80 text-[14px] font-lato-regular">OTP has been sent to your registered mobile number</Text>
+                        <Text className="text-white/80 text-[14px] font-lato-regular">OTP has been sent to {mobile}</Text>
                     </ImageBackground>
 
                     <View className="flex-1 bg-white px-8 pt-10 ">
@@ -192,8 +195,8 @@ export default function OtpVerification() {
                         </TouchableOpacity>
 
                         <View className="flex-row justify-center items-center">
-                            <Text className="text-gray-500 text-[14px]">Didn't get the OTP?  </Text>
-                            <TouchableOpacity onPress={handleResend}>
+                            <Text className="text-gray-500 text-[14px]">Didn&apos;t get the OTP?  </Text>
+                            <TouchableOpacity onPress={handleResend} disabled={loading}>
                                 <Text className="text-[#4A43EC] text-[14px] font-semibold">Resend OTP</Text>
                             </TouchableOpacity>
                         </View>

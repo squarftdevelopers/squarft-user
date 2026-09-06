@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useCallback } from "react";
 import { View, Text, Pressable, ScrollView, Alert } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSelector, useDispatch } from "react-redux";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { getSearchHistoryThunk, deleteSearchHistoryThunk, clearAllSearchHistoryThunk } from "../../store/slices/searchSlice";
 import { SearchHistoryItemSkeleton } from "../../components/SkeletonLoader";
 
@@ -10,14 +10,14 @@ const getSearchHistoryId = (item) => item?.id || item?.search_id || item?.histor
 
 export default function RecentSearches() {
     const dispatch = useDispatch();
-    const { searchHistory, loading } = useSelector((state) => state.search);
+    const { searchHistory, loading, error } = useSelector((state) => state.search);
     const { isLoggedIn, token } = useSelector((state) => state.auth);
 
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         if (isLoggedIn && token) {
             dispatch(getSearchHistoryThunk());
         }
-    }, [isLoggedIn, token, dispatch]);
+    }, [isLoggedIn, token, dispatch]));
 
     const handleDeleteItem = (item) => {
         const id = getSearchHistoryId(item);
@@ -28,13 +28,16 @@ export default function RecentSearches() {
 
         Alert.alert(
             'Delete Search',
-            `Remove "${item.query_text}" from history?`,
+            `Remove "${item.query_text || 'Filtered search'}" from history?`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Delete',
                     style: 'destructive',
-                    onPress: () => dispatch(deleteSearchHistoryThunk(item))
+                    onPress: async () => {
+                        try { await dispatch(deleteSearchHistoryThunk(item)).unwrap(); }
+                        catch (error) { Alert.alert('Unable to delete search', String(error)); }
+                    }
                 }
             ]
         );
@@ -49,7 +52,10 @@ export default function RecentSearches() {
                 {
                     text: 'Clear All',
                     style: 'destructive',
-                    onPress: () => dispatch(clearAllSearchHistoryThunk())
+                    onPress: async () => {
+                        try { await dispatch(clearAllSearchHistoryThunk()).unwrap(); }
+                        catch (error) { Alert.alert('Unable to clear searches', String(error)); }
+                    }
                 }
             ]
         );
@@ -57,6 +63,7 @@ export default function RecentSearches() {
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) return 'Date unavailable';
         const now = new Date();
         const diffMs = now - date;
         const diffMins = Math.floor(diffMs / 60000);
@@ -107,6 +114,8 @@ export default function RecentSearches() {
                     <View>
                         {[1, 2, 3, 4, 5].map(i => <SearchHistoryItemSkeleton key={i} />)}
                     </View>
+                ) : error ? (
+                    <Pressable onPress={() => dispatch(getSearchHistoryThunk())} className="p-6"><Text className="text-red-500">{error} Tap to retry.</Text></Pressable>
                 ) : searchHistory.length === 0 ? (
                     <View className="flex-1 items-center justify-center py-20">
                         <MaterialCommunityIcons name="history" size={64} color="#D1D5DB" />
@@ -133,7 +142,7 @@ export default function RecentSearches() {
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-base font-manrope-semibold text-gray-900">
-                                        {item.query_text}
+                                        {item.query_text || 'Filtered search'}
                                     </Text>
                                     <Text className="text-xs text-gray-500 font-manrope mt-1">
                                         {formatDate(item.searched_at)}

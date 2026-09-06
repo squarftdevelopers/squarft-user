@@ -42,6 +42,9 @@ async function request(path, token, options = {}) {
 }
 
 export const notificationApi = {
+    list: (token, page = 1) => request(`/api/v1/notifications?page=${page}&limit=20`, token),
+    markRead: (token, id) => request(`/api/v1/notifications/${encodeURIComponent(id)}/read`, token, { method: 'PATCH' }),
+    markAllRead: (token) => request('/api/v1/notifications/read-all', token, { method: 'PATCH' }),
     registerPushToken: (token, payload) =>
         request("/api/v1/push-tokens/register", token, {
             method: "POST",

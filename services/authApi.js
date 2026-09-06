@@ -7,7 +7,11 @@ async function request(path, options = {}) {
             ...options,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Request failed');
+        if (!res.ok) {
+            const error = new Error(data.message || 'Request failed');
+            error.status = res.status;
+            throw error;
+        }
         return data;
     } catch (error) {
     
@@ -19,16 +23,32 @@ async function request(path, options = {}) {
 }
 
 export const authApi = {
+    getBranches: async () => {
+        const response = await request('/api/v1/branches');
+        return response.data || [];
+    },
+
+    startLogin: async (phone) => {
+        try {
+            return { ...await authApi.sendOtp(phone, 'login'), needsRegistration: false };
+        } catch (error) {
+            if (error.status === 400 && error.message === 'No account found with this phone number') {
+                return { needsRegistration: true };
+            }
+            throw error;
+        }
+    },
+
     login: (verified_token) =>
         request('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ verified_token }),
         }),
 
-    register: (verified_token, first_name, last_name) =>
+    register: (verified_token, first_name, last_name, branch_id) =>
         request('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ verified_token, first_name, last_name }),
+            body: JSON.stringify({ verified_token, first_name, last_name, branch_id }),
         }),
 
     sendOtp: (phone, purpose) =>

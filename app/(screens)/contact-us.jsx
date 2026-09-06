@@ -4,15 +4,19 @@ import { router } from "expo-router";
 import { useSelector } from "react-redux";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { getProfileDisplay } from "../../services/profileDisplay";
+import { AI_BASE_URL } from "../../services/config";
+
 const APP_ICON = require("../../assets/icons/app-icon.png");
 
 export default function ContactUs() {
-    const profile = useSelector((state) => state.auth.profile);
+    const { profile, user } = useSelector((state) => state.auth);
+    const display = getProfileDisplay(profile, user);
     const insets = useSafeAreaInsets();
 
     const startAiSupport = () => {
-        const phoneNumber = profile?.user?.phone || profile?.user?.phone_number;
-        const name = profile?.user?.full_name || "App User";
+        const phoneNumber = display.phone;
+        const name = display.name;
 
         if (!phoneNumber) {
             Alert.alert(
@@ -44,42 +48,24 @@ export default function ContactUs() {
                     We’re here to help.
                 </Text>
                 <Text style={{ marginTop: 6, fontSize: 12.5, lineHeight: 18, color: "#64748B", maxWidth: 300 }}>
-                    Reach our team by email, visit our corporate office, or speak with AI customer support.
+                    View your assigned branch or start an AI support call.
                 </Text>
 
-                <View style={{ marginTop: 22, backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: "#E8ECF2", overflow: "hidden" }}>
-                    <View style={{ flexDirection: "row", padding: 14 }}>
-                        <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" }}>
-                            <Ionicons name="mail-outline" size={16} color="#4A43EC" />
-                        </View>
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                            <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#94A3B8", letterSpacing: 0.5 }}>EMAIL</Text>
-                            <Text style={{ marginTop: 3, fontSize: 13, fontWeight: "700", color: "#111827" }}>support@squarft.com</Text>
-                        </View>
+                {display.branch?.name ? (
+                    <View style={{ marginTop: 22, padding: 16, backgroundColor: '#fff', borderRadius: 14 }}>
+                        <Text style={{ color: '#64748B', fontSize: 12 }}>YOUR BRANCH</Text>
+                        <Text style={{ marginTop: 6, fontSize: 16, fontWeight: '600' }}>{display.branch.name}</Text>
+                        {display.branch.city ? <Text style={{ marginTop: 4, color: '#64748B' }}>{display.branch.city}</Text> : null}
                     </View>
+                ) : null}
 
-                    <View style={{ height: 1, backgroundColor: "#EEF2F7", marginHorizontal: 14 }} />
-
-                    <View style={{ flexDirection: "row", padding: 14 }}>
-                        <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" }}>
-                            <Ionicons name="location-outline" size={17} color="#4A43EC" />
-                        </View>
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                            <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#94A3B8", letterSpacing: 0.5 }}>CORPORATE OFFICE</Text>
-                            <Text style={{ marginTop: 3, fontSize: 13, lineHeight: 19, fontWeight: "600", color: "#111827" }}>
-                                214/ Sadhguru Parinay, Vijay Nagar, Indore
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={{ marginTop: 14, padding: 16, borderRadius: 14, backgroundColor: "#111827" }}>
+                {AI_BASE_URL ? <View style={{ marginTop: 14, padding: 16, borderRadius: 14, backgroundColor: "#111827" }}>
                     <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" }}>
                         <Ionicons name="call-outline" size={17} color="#fff" />
                     </View>
                     <Text style={{ marginTop: 12, fontSize: 15, fontWeight: "700", color: "#fff" }}>AI Customer Support</Text>
                     <Text style={{ marginTop: 5, fontSize: 12.5, lineHeight: 18, color: "#CBD5E1" }}>
-                        Speak with our AI for customer support through our AI customer support service.
+                        Ask questions about using SquarFT and your property search.
                     </Text>
                     <Pressable
                         onPress={startAiSupport}
@@ -87,7 +73,7 @@ export default function ContactUs() {
                     >
                         <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}>Start support call</Text>
                     </Pressable>
-                </View>
+                </View> : <Text style={{ marginTop: 24, color: '#64748B' }}>Support calls are currently unavailable.</Text>}
 
                 <View style={{ flex: 1, minHeight: 56 }} />
                 <View style={{ alignItems: "center" }}>

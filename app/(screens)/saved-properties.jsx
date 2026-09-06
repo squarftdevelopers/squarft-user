@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import { View, Text, Pressable, ScrollView, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSelector, useDispatch } from "react-redux";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { fetchSavedPropertiesThunk } from "../../store/slices/propertiesSlice";
 import { fetchProjectListThunk } from "../../store/slices/projectSlice";
 import { PropertyCardSkeleton } from "../../components/SkeletonLoader";
@@ -21,16 +21,16 @@ import {
 export default function SavedProperties() {
   const dispatch = useDispatch();
   const navigatingRef = useRef(false);
-  const { savedProperties, loading } = useSelector((state) => state.properties);
+  const { savedProperties, loading, error } = useSelector((state) => state.properties);
   const { list: projectList } = useSelector((state) => state.project);
   const { isLoggedIn, token } = useSelector((state) => state.auth);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (isLoggedIn && token) {
       dispatch(fetchSavedPropertiesThunk());
       dispatch(fetchProjectListThunk());
     }
-  }, [isLoggedIn, token, dispatch]);
+  }, [isLoggedIn, token, dispatch]));
 
   return (
     <View className="flex-1 bg-white">
@@ -41,10 +41,10 @@ export default function SavedProperties() {
             <Feather name="arrow-left" size={24} color="#111827" />
           </Pressable>
           <View className="flex-1">
-            <Text className="text-xl font-manrope-bold text-gray-900">Saved Projects</Text>
+            <Text className="text-xl font-manrope-bold text-gray-900">Saved Items</Text>
             {!loading && (
               <Text className="text-sm text-gray-500 font-manrope">
-                {savedProperties.length} {savedProperties.length === 1 ? 'property' : 'properties'}
+                {savedProperties.length} {savedProperties.length === 1 ? 'item' : 'items'}
               </Text>
             )}
           </View>
@@ -60,10 +60,12 @@ export default function SavedProperties() {
         <View className="px-4 pt-4">
           {loading ? (
             [1, 2, 3].map(i => <PropertyCardSkeleton key={i} />)
+          ) : error ? (
+            <Pressable onPress={() => dispatch(fetchSavedPropertiesThunk())} className="py-8"><Text className="text-red-500 text-center">{error} Tap to retry.</Text></Pressable>
           ) : savedProperties.length === 0 ? (
             <View className="flex-1 items-center justify-center py-20">
               <Feather name="bookmark" size={64} color="#D1D5DB" />
-              <Text className="text-gray-900 text-lg font-manrope-bold mt-4">No Saved Properties</Text>
+              <Text className="text-gray-900 text-lg font-manrope-bold mt-4">No Saved Items</Text>
               <Text className="text-gray-500 text-center mt-2 font-manrope px-8">
                 Start saving properties you like to view them here
               </Text>
@@ -94,7 +96,7 @@ export default function SavedProperties() {
                 navigatingRef.current = true;
                 router.push({
                   pathname: "/(screens)/project-detail",
-                  params: { id: itemId, slug: propertyDetails.slug || 'none' },
+                  params: { id: isProject ? itemId : propertyDetails.project_id, slug: isProject ? propertyDetails.slug || 'none' : 'none' },
                 });
                 setTimeout(() => {
                   navigatingRef.current = false;
@@ -150,14 +152,14 @@ export default function SavedProperties() {
                     </Text>
                   </View>
                 </View>
-                <View className="px-3 pb-3">
+                {(isProject || propertyDetails.project_id) ? <View className="px-3 pb-3">
                   <Pressable
                     onPress={openDetails}
                     className="w-full border border-[#4A43EC] rounded-xl py-2 items-center justify-center"
                   >
                     <Text className="text-[#4A43EC] font-manrope-extrabold text-[13px]">View details</Text>
                   </Pressable>
-                </View>
+                </View> : null}
               </View>
               );
             })

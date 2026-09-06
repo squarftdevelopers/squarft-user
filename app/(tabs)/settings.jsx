@@ -1,15 +1,16 @@
 import {
-    View, Text, Image, TouchableOpacity,
-    ScrollView, Switch, Alert, ActivityIndicator, Platform,
+    View, Text, TouchableOpacity,
+    ScrollView, Switch, Alert, ActivityIndicator, Platform, RefreshControl,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { logoutThunk, fetchProfileThunk, updateProfilePictureThunk } from "../../store/slices/authSlice";
-import { currentUser } from "../../data/user";
+import { getProfileDisplay } from "../../services/profileDisplay";
+import { AI_BASE_URL } from "../../services/config";
 import { ProfileSkeleton } from "../../components/SkeletonLoader";
 import UserAvatar from "../../components/UserAvatar";
 import {
@@ -63,6 +64,8 @@ function SettingsRow({ icon, iconBg, label, sublabel, sublabelColor, right, onPr
         <>
             <TouchableOpacity
                 onPress={onPress}
+                disabled={!onPress}
+                accessibilityRole={onPress ? "button" : undefined}
                 activeOpacity={0.7}
                 style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}
             >
@@ -89,18 +92,16 @@ function SettingsRow({ icon, iconBg, label, sublabel, sublabelColor, right, onPr
 
 export default function Settings() {
     const dispatch = useDispatch();
-    const [notificationsOn, setNotificationsOn] = useState(true);
+    const [loggingOut, setLoggingOut] = useState(false);
     const [biometricLockOn, setBiometricLockOn] = useState(false);
     const [biometricLabel, setBiometricLabel] = useState("Biometric Lock");
     const [biometricBusy, setBiometricBusy] = useState(false);
 
-    const { profile, loading, isLoggedIn, token, profilePictureLoading } = useSelector((state) => state.auth);
+    const { profile, user, profileLoading, profileError, isLoggedIn, token, profilePictureLoading } = useSelector((state) => state.auth);
 
-    useEffect(() => {
-        if (isLoggedIn) {
-            dispatch(fetchProfileThunk());
-        }
-    }, [isLoggedIn, dispatch]);
+    useFocusEffect(useCallback(() => {
+        if (isLoggedIn) dispatch(fetchProfileThunk());
+    }, [isLoggedIn, dispatch]));
 
     useEffect(() => {
         (async () => {
@@ -136,6 +137,8 @@ export default function Settings() {
 
             await setBiometricLockEnabled(nextValue);
             setBiometricLockOn(nextValue);
+        } catch (error) {
+            Alert.alert('Unable to update lock', error?.message || 'Please try again.');
         } finally {
             setBiometricBusy(false);
         }
@@ -145,15 +148,23 @@ export default function Settings() {
         Alert.alert('Logout', 'Are you sure you want to logout?', [
             { text: 'Cancel', style: 'cancel' },
             {
-                text: 'Logout', style: 'destructive', onPress: () => {
-                    dispatch(logoutThunk());
-                    router.replace('/(auth)/login');
+                text: 'Logout', style: 'destructive', onPress: async () => {
+                    setLoggingOut(true);
+                    try {
+                        await dispatch(logoutThunk()).unwrap();
+                        router.replace('/(auth)/login');
+                    } catch (error) {
+                        Alert.alert('Logout failed', typeof error === 'string' ? error : 'Please try again.');
+                    } finally {
+                        setLoggingOut(false);
+                    }
                 },
             },
         ]);
     };
 
     const handleProfilePicturePick = async () => {
+        if (profilePictureLoading) return;
         if (!isLoggedIn || !token) {
             Alert.alert("Login required", "Please login before updating your profile photo.");
             return;
@@ -180,40 +191,32 @@ export default function Settings() {
             const asset = result.assets?.[0];
             if (!asset?.uri) return;
 
-            let uri = asset.uri;
-            if (Platform.OS === "android" && asset.width && asset.height) {
+            const actions = [];
+            if (Platform.OS === 'android' && asset.width && asset.height) {
                 const size = Math.min(asset.width, asset.height);
-                const manipulated = await ImageManipulator.manipulateAsync(
-                    asset.uri,
-                    [{
-                        crop: {
-                            originX: Math.round((asset.width - size) / 2),
-                            originY: Math.round((asset.height - size) / 2),
-                            width: size,
-                            height: size,
-                        },
-                    }],
-                    { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
-                );
-                uri = manipulated.uri;
+                actions.push({ crop: {
+                    originX: Math.round((asset.width - size) / 2),
+                    originY: Math.round((asset.height - size) / 2),
+                    width: size, height: size,
+                } });
             }
-
+            actions.push({ resize: { width: 1024 } });
+            // Normalize HEIC/PNG selections and keep multipart metadata consistent.
+            const picture = await ImageManipulator.manipulateAsync(asset.uri, actions,
+                { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG });
             await dispatch(updateProfilePictureThunk({
-                uri,
-                name: asset.fileName || "profile-picture.jpg",
-                type: asset.mimeType || "image/jpeg",
+                uri: picture.uri, name: 'profile-picture.jpg', type: 'image/jpeg',
             })).unwrap();
-            await dispatch(fetchProfileThunk()).unwrap();
 
             Alert.alert("Profile updated", "Your profile photo has been updated.");
         } catch (error) {
-            Alert.alert("Upload failed", error?.message || "Please try again.");
+            Alert.alert("Upload failed", (typeof error === "string" ? error : error?.message) || "Please try again.");
         }
     };
 
     const startCustomerSupportCall = () => {
-        const phoneNumber = profile?.user?.phone || profile?.user?.phone_number || currentUser.phone;
-        const name = profile?.user?.full_name || currentUser.name || 'App User';
+        const phoneNumber = displayPhone;
+        const name = displayName;
 
         if (!phoneNumber) {
             Alert.alert(
@@ -232,21 +235,10 @@ export default function Settings() {
         });
     };
 
-    // Use profile data if available, otherwise fallback to currentUser
-    const displayName = profile?.user?.full_name || currentUser.name;
-    const displayEmail = profile?.user?.email || currentUser.email;
-    const displayPhone = profile?.user?.phone || currentUser.phone;
-    const displayRole = profile?.user?.role || 'PROPERTY OWNER';
-    const displayAvatar = profile?.user?.profilePictureUrl
-        || profile?.user?.avatar_url
-        || profile?.user?.avatarUrl
-        || null;
-    // const listingsCount = profile?.activity?.listings_count || 12;
-    // const subscription = profile?.subscription;
+    const display = getProfileDisplay(profile, user);
+    const { name: displayName, phone: displayPhone, email: displayEmail, avatar: displayAvatar, branch } = display;
 
-    if (loading && !profile) {
-        return <ProfileSkeleton />;
-    }
+    if (profileLoading && !profile) return <ProfileSkeleton />;
 
     return (
 
@@ -260,10 +252,16 @@ export default function Settings() {
                 }}
             />
             <ScrollView
+                refreshControl={<RefreshControl refreshing={profileLoading && !!profile} onRefresh={() => dispatch(fetchProfileThunk())} />}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 210 }}
             >
 
+                {profileError ? (
+                    <TouchableOpacity onPress={() => dispatch(fetchProfileThunk())} style={{ padding: 16 }}>
+                        <Text style={{ color: '#DC2626' }}>{profileError} Tap to retry.</Text>
+                    </TouchableOpacity>
+                ) : null}
                 <View style={{ alignItems: 'center', paddingTop: 30, paddingBottom: 2 }}>
                     <TouchableOpacity
                         activeOpacity={0.85}
@@ -293,15 +291,7 @@ export default function Settings() {
                     <Text style={{ fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 6 }}>
                         {displayName}
                     </Text>
-                    <View style={{
-                        backgroundColor: '#dee4f7ff', borderRadius: 25,
-                        paddingHorizontal: 12, paddingVertical: 4, marginBottom: 6,
-                    }}>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#4A43EC', letterSpacing: 0.5 }}>
-                            {displayRole}
-                        </Text>
-                    </View>
-                    <Text style={{ fontSize: 13, color: '#64748B' }}>{displayEmail}</Text>
+                    {displayEmail ? <Text style={{ fontSize: 13, color: '#64748B' }}>{displayEmail}</Text> : null}
                 </View>
 
                 {/* Personal Information */}
@@ -309,16 +299,22 @@ export default function Settings() {
                 <SettingsCard>
                     <SettingsRow
                         icon={<Ionicons name="person-outline" size={18} color="#4A43EC" />}
-                        label="Legal Name"
+                        label="Full Name"
                         sublabel={displayName}
                         right={<View />}
                     />
                     <SettingsRow
                         icon={<Feather name="phone" size={17} color="#4A43EC" />}
                         label="Phone Number"
-                        sublabel={displayPhone}
+                        sublabel={displayPhone || "Not available"}
                         right={<View />}
                     />
+                    {branch?.name ? <SettingsRow
+                        icon={<Ionicons name="business-outline" size={18} color="#4A43EC" />}
+                        label="Branch"
+                        sublabel={[branch.name, branch.city].filter(Boolean).join(' — ')}
+                        right={<View />}
+                    /> : null}
                     <SettingsRow
                         icon={<MaterialCommunityIcons name="fingerprint" size={18} color="#4A43EC" />}
                         label="Biometric Lock"
@@ -345,7 +341,7 @@ export default function Settings() {
                              
                     <SettingsRow
                         icon={<Ionicons name="heart-outline" size={18} color="#4A43EC" />}
-                        label="Saved Projects"
+                        label="Saved Properties & Projects"
                         onPress={() => router.push('/(screens)/saved-properties')}
                     />
                     <SettingsRow
@@ -363,14 +359,6 @@ export default function Settings() {
                         icon={<Ionicons name="notifications-outline" size={18} color="#475569" />}
                         label="Notifications"
                         onPress={() => router.push("/(screens)/notifications")}
-                        right={
-                            <Switch
-                                value={notificationsOn}
-                                onValueChange={setNotificationsOn}
-                                trackColor={{ false: '#E5E7EB', true: '#4A43EC' }}
-                                thumbColor="#fff"
-                            />
-                        }
                         isLast
                     />
                 </SettingsCard>
@@ -378,11 +366,11 @@ export default function Settings() {
                 {/* Support */}
                 <SectionLabel text="SUPPORT" />
                 <SettingsCard>
-                    <SettingsRow
+                    {AI_BASE_URL ? <SettingsRow
                         icon={<Ionicons name="call-outline" size={18} color="#475569" />}
-                        label="Customer Support"
+                        label="AI Customer Support"
                         onPress={startCustomerSupportCall}
-                    />
+                    /> : null}
                     <SettingsRow
                         icon={<MaterialCommunityIcons name="email-outline" size={18} color="#475569" />}
                         label="Contact Us"
@@ -395,6 +383,7 @@ export default function Settings() {
                 <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={handleLogout}
+                    disabled={loggingOut}
                     style={{
                         marginHorizontal: 16, marginTop: 28,
                         backgroundColor: '#1A1A1A',
@@ -403,7 +392,7 @@ export default function Settings() {
                     }}
                 >
                     <MaterialCommunityIcons name="logout" size={20} color="#fff" />
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Logout</Text>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>{loggingOut ? "Logging out…" : "Logout"}</Text>
                 </TouchableOpacity>
             </ScrollView>
         </View>

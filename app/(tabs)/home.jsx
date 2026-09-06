@@ -46,14 +46,6 @@ const CATEGORIES = [
   { id: "7", label: "Office", image: require("../../assets/images/office.png"), type: "Office" },
 ];
 
-const cardShadow = {
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.06,
-  shadowRadius: 2,
-  elevation: 0.5,
-};
-
 const formatProjectPrice = (value) => {
   if (value === null || value === undefined || value === "") return "";
   const num = Number(value);
@@ -401,7 +393,7 @@ export default function Home() {
     priceRange: project.price_range || '',
     bhk: project.bhk_config || '',
     possession: project.possession || '',
-    image: project.cover_image ? { uri: project.cover_image } : null,
+    image: project.cover_image_url || project.image_url || project.cover_image || project.image || null,
     isFavourite: favouriteProjects.includes(project.id),
   }));
 
@@ -765,9 +757,7 @@ export default function Home() {
           <HighGrowthLocalitiesSkeleton count={2} />
         ) : displayHighGrowthProjects.length > 0 ? (
           displayHighGrowthProjects.slice(0, 2).map((item) => {
-            const itemImage = item.image 
-              ? (typeof item.image === 'string' ? { uri: item.image } : item.image)
-              : null;
+            const itemImage = typeof item.image === "string" ? { uri: item.image } : item.image;
 
             return (
               <TouchableOpacity
@@ -782,7 +772,7 @@ export default function Home() {
               >
                 <View className="w-[130px] h-[130px] rounded-2xl border border-indigo-100 overflow-hidden items-center justify-center">
                   {itemImage ? (
-                    <Image source={itemImage} className="w-[130px] h-[130px]" resizeMode="cover" />
+                    <Image source={itemImage} style={{ width: 130, height: 130 }} resizeMode="cover" />
                   ) : (
                     <View className="w-[130px] h-[130px] bg-gray-100 items-center justify-center">
                       <MaterialCommunityIcons name="office-building-outline" size={32} color="#9CA3AF" />

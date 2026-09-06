@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import * as Notifications from "expo-notifications";
 import { registerForPushNotificationsAsync } from "../services/pushNotifications";
-import { addNotification } from "../store/slices/notificationSlice";
+import { fetchNotificationsThunk } from "../store/slices/notificationSlice";
 import { navigateToNotification } from "../utils/notificationNavigation";
 
 export default function PushNotificationRegistrar() {
@@ -25,6 +25,7 @@ export default function PushNotificationRegistrar() {
         }
 
         let cancelled = false;
+        dispatch(fetchNotificationsThunk(1));
 
         // Register for push notifications
         registerForPushNotificationsAsync(token)
@@ -50,18 +51,7 @@ export default function PushNotificationRegistrar() {
                 body: notification.request.content.body,
             });
 
-            const { title, body, data } = notification.request.content;
-
-            // Add to Redux store
-            dispatch(addNotification({
-                title,
-                description: body,
-                eventKey: data?.eventKey || null,
-                category: data?.category || null,
-                deepLink: data?.deepLink || null,
-                data: data || {},
-                time: 'Just now',
-            }));
+            dispatch(fetchNotificationsThunk(1));
         });
 
         // Listen for notification tap (app opened from notification)

@@ -1,10 +1,9 @@
 import { Text, View, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform, ScrollView, ImageBackground, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setMobile, setOtpFlow, clearError, clearAuthInputs } from "../../store/slices/authSlice";
-import { sendOtpThunk } from "../../store/slices/authSlice";
+import { clearError, clearAuthInputs , startLoginThunk } from "../../store/slices/authSlice";
 const logo = require("../../assets/icons/app-icon.png");
 
 const COUNTRY_CODE = "+91";
@@ -17,16 +16,15 @@ export default function Login() {
     useEffect(() => {
         dispatch(clearError());
         dispatch(clearAuthInputs());
-    }, []);
+    }, [dispatch]);
 
     const handleSendOtp = async () => {
         dispatch(clearError());
         const phone = `${COUNTRY_CODE}${localNumber}`;
-        dispatch(setMobile(phone));
-        dispatch(setOtpFlow("login"));
-        const result = await dispatch(sendOtpThunk({ phone, purpose: "login" }));
-        if (sendOtpThunk.fulfilled.match(result)) {
-            router.push("/otp-verification");
+        if (loading || localNumber.length !== 10) return;
+        const result = await dispatch(startLoginThunk({ phone }));
+        if (startLoginThunk.fulfilled.match(result)) {
+            router.push(result.payload.needsRegistration ? '/complete-login' : '/otp-verification');
         }
     };
 
@@ -44,12 +42,7 @@ export default function Login() {
                             <Image source={logo} style={{ width: 110, height: 110, margin: -26, }} resizeMode="contain" />
                         </View>
                         <Text className="text-white text-[26px] font-manrope-bold mb-5">Login</Text>
-                        <View className="flex-row items-center ">
-                            <Text className="text-white/80 text-[14px]">Don&apos;t have an account? </Text>
-                            <Link href="/register">
-                                <Text className="text-white text-[14px] font-semibold underline">Sign Up</Text>
-                            </Link>
-                        </View>
+                        <Text className="text-white/80 text-[14px]">Enter your phone number to continue</Text>
                     </ImageBackground>
 
                     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 24, paddingTop: 32 }} keyboardShouldPersistTaps="handled">
@@ -81,7 +74,7 @@ export default function Login() {
                         >
                             {loading
                                 ? <ActivityIndicator color="#fff" />
-                                : <Text className="text-white text-[16px] font-lato-bold">Send OTP</Text>
+                                : <Text className="text-white text-[16px] font-lato-bold">Continue</Text>
                             }
                         </TouchableOpacity>
 
