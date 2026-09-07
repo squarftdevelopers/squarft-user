@@ -94,4 +94,13 @@ export const projectApi = {
     // Get projects close to the user's current coordinates
     getNearbyProjects: ({ latitude, longitude }, token) =>
         request(`/api/v1/projects/nearby?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`, token),
+
+    recordProjectView: (projectId, token) =>
+        request(`/api/v1/projects/${encodeURIComponent(projectId)}/view`, token, { method: 'POST' }),
+
+    getRecentProjectViews: (token) =>
+        request('/api/v1/projects/activity/recent', token),
+
+    getSeenProjectViews: (token) =>
+        request('/api/v1/projects/activity/seen', token),
 };

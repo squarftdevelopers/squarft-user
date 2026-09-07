@@ -1,7 +1,6 @@
-import { View, Text, ScrollView, Pressable, StyleSheet, Animated } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, Animated, RefreshControl, Easing } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
-import { Easing } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,7 +15,7 @@ const Shimmer = ({ style, className }) => {
                 Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
             ])
         ).start();
-    }, []);
+    }, [anim]);
     const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.7] });
     return <Animated.View style={[{ backgroundColor: '#E5E7EB', borderRadius: 6, opacity }, style]} className={className} />;
 };
@@ -62,7 +61,7 @@ const ProgressBar = memo(function ProgressBar({ percentage, animKey }) {
             easing: Easing.out(Easing.cubic),
             useNativeDriver: false,
         }).start();
-    }, [percentage, animKey]);
+    }, [animatedValue, percentage, animKey]);
 
     const width = animatedValue.interpolate({
         inputRange: [0, 100],
@@ -141,14 +140,28 @@ const DealCard = memo(function DealCard({ deal, animKey, onPress }) {
 export default function MyDeals() {
     const [activeFilter, setActiveFilter] = useState("All Deals");
     const [animKey, setAnimKey] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
     const router = useRouter();
     const dispatch = useDispatch();
     const { deals, stats, loading, error } = useSelector((state) => state.deals);
 
-    useFocusEffect(useCallback(() => {
-        dispatch(fetchMyDeals());
+    const refreshDeals = useCallback(() => {
         setAnimKey((k) => k + 1);
-    }, [dispatch]));
+        return dispatch(fetchMyDeals());
+    }, [dispatch]);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await refreshDeals();
+        } finally {
+            setRefreshing(false);
+        }
+    }, [refreshDeals]);
+
+    useFocusEffect(useCallback(() => {
+        refreshDeals();
+    }, [refreshDeals]));
 
     const filteredDeals = useMemo(() => deals.filter(deal => {
         if (activeFilter === "Active") return deal.status === 'active';
@@ -192,7 +205,7 @@ export default function MyDeals() {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 150 }}
-                bounces={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
             >
                 {/* Header Section */}
                 <View className="pt-[60px] pb-6 px-5 overflow-hidden relative">

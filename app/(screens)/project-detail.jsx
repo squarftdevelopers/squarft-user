@@ -19,7 +19,6 @@ import { addToRecentProjects } from "../../store/slices/recentProjectsSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { allProjects } from "../../data/projects";
 import Overview from "../../components/projectDetail/Overview";
 import Highlights from "../../components/projectDetail/Highlights";
 import PropertyTour from "../../components/projectDetail/PropertyTour";
@@ -31,7 +30,6 @@ import { getProjectPropertyCardConfig } from "../../services/propertyConfigurati
 
 const frame260 = require("../../assets/images/Frame 26086854.png");
 const frame871 = require("../../assets/images/Frame 26086871.png");
-const group1597 = require("../../assets/images/Group 1597884495.png");
 
 const { width } = Dimensions.get("window");
 
@@ -145,6 +143,13 @@ function formatProjectDate(value) {
   });
 }
 
+function formatPossession(value) {
+  const text = cleanText(value).replace(/[_-]+/g, ' ');
+  if (!text) return '';
+  if (text.toLowerCase() === 'possession completed') return 'Ready to move';
+  return text.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function normalizeProjectRating(...values) {
   for (const value of values) {
     const rating = Number(value);
@@ -156,7 +161,7 @@ function normalizeProjectRating(...values) {
     }
   }
 
-  return '8.8';
+  return null;
 }
 
 function formatConfigLabel(value) {
@@ -168,7 +173,7 @@ function formatConfigLabel(value) {
     .filter(Boolean)
     .map((word) => {
       const upper = word.toUpperCase();
-      if (upper === 'BHK' || upper === 'PG') return upper;
+      if (upper === 'BHK' || upper === 'RK' || upper === 'PG') return upper;
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
     .join(' ');
@@ -212,6 +217,26 @@ function normalizeConfigLabel(value) {
   return parts.length > 0 ? parts.join(', ') : null;
 }
 
+// Inventory created in the project panel stores the unit configuration and
+// property type separately (for example, `2BHK` + `rowhouse`).  Keep those
+// values together for the project-level Config card instead of falling back
+// to a generic project type such as "Apartment".
+function formatInventoryConfig(variant) {
+  const configuration = formatConfigLabel(variant?.configuration)
+    .replace(/^(\d+)\s*BHK$/i, '$1 BHK')
+    .replace(/^(\d+)\s*RK$/i, '$1 RK');
+  const propertyType = formatConfigLabel(
+    variant?.property_subtype || variant?.property_type || variant?.type,
+  );
+
+  if (!configuration) return null;
+  if (!propertyType || configuration.toLowerCase().includes(propertyType.toLowerCase())) {
+    return configuration;
+  }
+
+  return `${configuration} ${propertyType}`;
+}
+
 function normalizeFloorPlan(plan) {
   const propertyType = plan.property_type || plan.type;
   const configurationLabel = getProjectPropertyCardConfig({
@@ -224,6 +249,7 @@ function normalizeFloorPlan(plan) {
     : null;
   const title = description
     || bedroomTitle
+    || plan.configuration
     || plan.title
     || configurationLabel
     || formatConfigLabel(plan.sub_type || plan.property_subtype )
@@ -289,7 +315,7 @@ export default function ProjectDetail() {
   const dispatch = useDispatch();
   const savedProjects = useSelector((s) => s.properties.favouriteProjects);
   const recommendedProperties = useSelector((s) => s.properties.recommended);
-  const { details: apiProject, floorPlans, resale, landmarks, amenities, similarProperties, loading: apiLoading, currentDetailSlug, error: apiError } = useSelector((s) => s.project);
+  const { details: apiProject, floorPlans, resale, landmarks, amenities, similarProperties, currentDetailSlug, error: apiError } = useSelector((s) => s.project);
   const { list: projectList } = useSelector((s) => s.project);
   const { currentBuilder } = useSelector((s) => s.builder);
   const { isLoggedIn, token } = useSelector((s) => s.auth);
@@ -300,10 +326,10 @@ export default function ProjectDetail() {
   }, [isLoggedIn, token]);
 
   // Find project from API list or local fallback
-  const listProject = projectList.find((p) => p.id === id) || allProjects.find((p) => p.id === id);
+  const listProject = projectList.find((p) => p.id === id);
   const isSaved = savedProjects.includes(id);
 
-  // Use slug from params or from API project list (local allProjects has no slug)
+  // Use the route slug when available, otherwise resolve it from the loaded project list.
   const resolvedProjectSlug = slug || listProject?.slug || null;
   const detailLookupKey = id || resolvedProjectSlug;
   const activeApiProject = apiProject && (!id || String(apiProject.id) === String(id)) && currentDetailSlug === detailLookupKey
@@ -318,6 +344,9 @@ export default function ProjectDetail() {
 
   // Save the project itself, not the floor-plan properties
   const projectSaveId = id || resolvedProjectSlug || listProject?.id;
+  const projectActivityId = activeApiProject?.id
+    || listProject?.id
+    || (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id || '')) ? id : null);
   const trackedProjectRef = useRef(null);
 
   // If no slug available, fetch project list to resolve it
@@ -388,12 +417,12 @@ export default function ProjectDetail() {
   }, [dispatch, detailLookupKey, resolvedProjectSlug, id, slug]);
 
   useEffect(() => {
-    if (!detailLookupKey || trackedProjectRef.current === detailLookupKey) return;
+    if (!projectActivityId || trackedProjectRef.current === projectActivityId) return;
 
-    trackedProjectRef.current = detailLookupKey;
-    dispatch(incrementProjectView(String(detailLookupKey)));
-    dispatch(addToRecentProjects(String(detailLookupKey)));
-  }, [dispatch, detailLookupKey]);
+    trackedProjectRef.current = projectActivityId;
+    dispatch(incrementProjectView(String(projectActivityId)));
+    dispatch(addToRecentProjects(String(projectActivityId)));
+  }, [dispatch, projectActivityId]);
 
   useEffect(() => {
     if (projectOrganisationId) {
@@ -414,9 +443,11 @@ export default function ProjectDetail() {
   const apiVariants = Array.isArray(activeApiProject?.variants)
     ? activeApiProject.variants.map(normalizeFloorPlan)
     : [];
-  const normalizedVariants = Array.isArray(floorPlans?.floor_plans) && floorPlans.floor_plans.length > 0
-    ? floorPlans.floor_plans.map(normalizeFloorPlan)
-    : (apiVariants.length > 0 ? apiVariants : (base.variants || []));
+  const normalizedVariants = apiVariants.length > 0
+    ? apiVariants
+    : (Array.isArray(floorPlans?.floor_plans) && floorPlans.floor_plans.length > 0
+      ? floorPlans.floor_plans.map(normalizeFloorPlan)
+      : (base.variants || []));
   const variantConfig = normalizedVariants
     .map((variant) => {
       const propertyType = cleanText(variant.property_type || variant.type).toLowerCase();
@@ -425,6 +456,11 @@ export default function ProjectDetail() {
       return variant.bedrooms || variant.sub_type || variant.property_subtype || variant.type || variant.title;
     })
     .filter(Boolean);
+  const inventoryConfigs = [...new Set(
+    apiVariants
+      .map(formatInventoryConfig)
+      .filter(Boolean),
+  )];
   const coverImage = activeApiProject?.cover_image
     || activeApiProject?.cover_image_url
     || activeApiProject?.image
@@ -448,13 +484,14 @@ export default function ProjectDetail() {
     || cleanBuilderName(base.org_name)
     || cleanBuilderName(base.builder)
     || cleanBuilderName(base.owner_name)
-    || "Developer details unavailable";
+    || null;
   const launchedValue = activeApiProject?.stats?.launched
     || activeApiProject?.project_launch_date
     || activeApiProject?.created_at
     || base.launchedIn
     || base.created_at;
   const unitsValue = activeApiProject?.stats?.units
+    ?? activeApiProject?.inventory_units_count
     ?? activeApiProject?.total_properties
     ?? activeApiProject?.units
     ?? (normalizedVariants.length > 0 ? normalizedVariants.length : base.units);
@@ -464,7 +501,9 @@ export default function ProjectDetail() {
     activeApiProject?.project_rating,
     base.rating,
   );
-  const rawConfig = floorPlans?.summary?.configs ?? floorPlans?.configs ?? activeApiProject?.summary?.configs ?? activeApiProject?.configs ?? activeApiProject?.config;
+  const rawConfig = inventoryConfigs.length > 0
+    ? inventoryConfigs.join(', ')
+    : (floorPlans?.summary?.configs ?? floorPlans?.configs ?? activeApiProject?.summary?.configs ?? activeApiProject?.configs ?? activeApiProject?.config);
   const rawStartingPrice = floorPlans?.summary?.starting_from
     ?? floorPlans?.summary?.startingFrom
     ?? floorPlans?.starting_from
@@ -472,6 +511,7 @@ export default function ProjectDetail() {
     ?? floorPlans?.price?.min
     ?? activeApiProject?.summary?.starting_from
     ?? activeApiProject?.starting_from
+    ?? activeApiProject?.min_price
     ?? activeApiProject?.price_from
     ?? base.price_from
     ?? base.min_price
@@ -493,8 +533,8 @@ export default function ProjectDetail() {
       location: projectLocation,
       description: activeApiProject.description || base.description,
       reraId: activeApiProject.rera_id || activeApiProject.rera_number || base.reraId,
-      possession: activeApiProject.possession || activeApiProject.possession_date || activeApiProject.possession_status || base.possession,
-      possessionStatus: activeApiProject.possession || activeApiProject.possession_status || activeApiProject.possession_date || base.possessionStatus || base.possession,
+      possession: formatPossession(activeApiProject.possession || activeApiProject.possession_date || activeApiProject.possession_status || base.possession),
+      possessionStatus: formatPossession(activeApiProject.possession || activeApiProject.possession_status || activeApiProject.possession_date || base.possessionStatus || base.possession),
       builder: builderName,
       builderLogo: toImageSource(activeApiProject.developer?.logo || activeApiProject.org_logo_url || activeApiProject.organisation_logo_url || organisationLogo, base.builderLogo),
       developerId: projectOrganisationId || base.developerId,
@@ -512,8 +552,8 @@ export default function ProjectDetail() {
       subTypes: base.subTypes || variantConfig,
       propertyType: base.propertyType || activeApiProject.property_type,
       avgPricePerSqft: base.avgPricePerSqft,
-      price_from: activeApiProject.price_from ?? base.price_from,
-      price_to: activeApiProject.price_to ?? base.price_to,
+      price_from: activeApiProject.min_price ?? activeApiProject.price_from ?? base.price_from,
+      price_to: activeApiProject.max_price ?? activeApiProject.price_to ?? base.price_to,
       rera: activeApiProject.rera_approved !== undefined
         ? Boolean(activeApiProject.rera_approved)
         : Boolean(base.rera),
@@ -530,7 +570,7 @@ export default function ProjectDetail() {
       builderLogo: toImageSource(base.organisation_logo_url || base.org_logo_url || base.builderLogo, base.imageMain),
       developerId: projectOrganisationId || base.developerId,
       imageMain: toImageSource(coverImage, base.imageMain),
-      possession: base.possession_date || base.possession,
+      possession: formatPossession(base.possession_date || base.possession),
       units: base.units,
       launchedIn: base.launchedIn,
       rating: normalizeProjectRating(base.rating),
@@ -555,6 +595,10 @@ export default function ProjectDetail() {
         ? `₹${(rawStartingPrice / 100000).toFixed(0)}L`
         : rawStartingPrice)
     : project.variants?.[0]?.priceRange?.split("–")[0]?.trim() ?? project.avgPricePerSqft;
+  const hasRating = Boolean(project.rating);
+  const hasPossession = Boolean(cleanText(project.possession));
+  const hasBuilder = Boolean(project.builder && project.developerId);
+  const hasBookableUnits = normalizedVariants.length > 0;
 
   const savedProjectData = {
     id: projectSaveId,
@@ -641,8 +685,8 @@ export default function ProjectDetail() {
 
           <View className="flex-row items-start gap-3 mb-3.5">
             {/* Left: Rating block */}
-            <View className="border border-gray-200 rounded-xl p-3 mt-5 pl-2 pr-4">
-              <ImageBackground
+            {(hasRating || hasPossession) && <View className="border border-gray-200 rounded-xl p-3 mt-5 pl-2 pr-4">
+              {hasRating && <ImageBackground
                 source={frame260}
                 style={{
                   position: "absolute",
@@ -673,9 +717,9 @@ export default function ProjectDetail() {
                   {" "}
                   /10
                 </Text>
-              </ImageBackground>
-              <Text className="text-[12px] text-indigo-600 font-manrope-bold mt-1">
-                Possession by
+              </ImageBackground>}
+              {hasPossession && <><Text className="text-[12px] text-indigo-600 font-manrope-bold mt-1">
+                Possession
               </Text>
               <View className="flex-row items-center space-x-1 mt-0.5">
                 <Text className="text-[10px] font-manrope-medium text-[#858585]">
@@ -683,7 +727,8 @@ export default function ProjectDetail() {
                 </Text>
                 <Ionicons name="chevron-forward" size={13} color="#858585" />
               </View>
-            </View>
+              </>}
+            </View>}
 
             {/* Right: Location block */}
             <TouchableOpacity
@@ -701,22 +746,17 @@ export default function ProjectDetail() {
                 <View className="flex-row items-center space-x-1 mb-1">
                   <Ionicons name="location" size={14} color="#4A43EC" />
                   <Text className="text-[11px] font-manrope-regular text-gray-500">
-                    {" "}
-                    Prime Location
+                  {" "}
+                    View on map
                   </Text>
                 </View>
                 <ReraStatusBadge approved={project.rera} textClassName="text-[10px]" />
               </View>
-              <Image
-                source={group1597}
-                className="absolute right-0 top-0 bottom-0 w-[90px] h-full"
-                resizeMode="cover"
-              />
             </TouchableOpacity>
           </View>
 
           {/* Builder row */}
-          <ImageBackground
+          {hasBuilder && <ImageBackground
             source={frame871}
             className="rounded-2xl overflow-hidden"
             imageStyle={{ borderRadius: 12 }}
@@ -735,7 +775,7 @@ export default function ProjectDetail() {
               </Text>
              
             </TouchableOpacity>
-          </ImageBackground>
+          </ImageBackground>}
         </View>
 
         {/* Config block */}
@@ -803,7 +843,7 @@ export default function ProjectDetail() {
           className="absolute bottom-0 left-0 right-0 bg-white px-6 pt-6 border-t border-gray-100"
           style={{ paddingBottom: insets.bottom + 14 }}
         >
-          <DetailFooter onBookVisit={() => setBookModalVisible(true)} />
+        <DetailFooter onBookVisit={() => setBookModalVisible(true)} disabled={!hasBookableUnits} />
         </View>
       )}
 

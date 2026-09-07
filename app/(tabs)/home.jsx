@@ -9,6 +9,7 @@ import {
   Platform,
   Animated,
   Share,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -35,6 +36,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { RecommendedProjectsSkeleton, FeaturedProjectsSkeleton, ProjectInFocusSkeleton, HighGrowthLocalitiesSkeleton } from "../../components/SkeletonLoader";
 import { buildProjectAddress, buildProjectPrice } from "../../services/projectDisplay";
 import { useRefetchOnForeground } from "../../hooks/useRefetchOnForeground";
+import { applyProjectFilters, hasActiveProjectFilters } from "../../services/projectFilters";
 
 const CATEGORIES = [
   { id: "1", label: "Plot", image: require("../../assets/images/plot.png"), type: "Plot" },
@@ -212,6 +214,7 @@ export default function Home() {
   const navigation = useNavigation();
   const searchActive = useSelector((state) => state.app.searchActive);
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const { token, profile, user } = useSelector((s) => s.auth);
   const {
     highGrowthProjects,
@@ -223,6 +226,7 @@ export default function Home() {
   const { featured: apiFeatured, featuredLoading, list: projectList } = useSelector((s) => s.project);
   const unreadNotifications = useSelector((s) => s.notifications?.list?.filter((item) => !item.watched).length ?? 0);
   const coordinates = useSelector((s) => s.location.coordinates);
+  const filters = useSelector((s) => s.filter);
 
   const handleShareApp = useCallback(async () => {
     try {
@@ -280,14 +284,26 @@ export default function Home() {
   }, [featuredProjects]);
 
   const refreshHomeData = useCallback(() => {
-    if (!token) return;
+    if (!token) return Promise.resolve();
     console.log('🔄 [Home Screen] Refreshing properties and project data sets from API...');
-    dispatch(fetchFeaturedProjectsThunk());
-    dispatch(fetchProjectListThunk());
-    dispatch(fetchRecommendedPropertiesThunk());
-    dispatch(fetchSavedPropertiesThunk());
-    dispatch(fetchHighGrowthProjectsThunk());
+    return Promise.allSettled([
+      dispatch(fetchFeaturedProjectsThunk()),
+      dispatch(fetchProjectListThunk()),
+      dispatch(fetchRecommendedPropertiesThunk()),
+      dispatch(fetchSavedPropertiesThunk()),
+      dispatch(fetchHighGrowthProjectsThunk()),
+      dispatch(fetchProfileThunk()),
+    ]);
   }, [dispatch, token]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshHomeData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshHomeData]);
 
   useEffect(() => {
     if (token && coordinates) dispatch(fetchRecommendedPropertiesThunk());
@@ -327,6 +343,12 @@ export default function Home() {
 
   useRefetchOnForeground(refreshHomeData);
 
+  const filteredProjectList = useMemo(() => (
+    hasActiveProjectFilters(filters)
+      ? applyProjectFilters(projectList || [], filters)
+      : (projectList || [])
+  ), [filters, projectList]);
+
   if (searchActive) {
     return (
       <SearchOverlay
@@ -361,7 +383,7 @@ export default function Home() {
   const handleToggleContacted = (id) => dispatch(toggleContacted(id));
   const handleToggleRecent = (id) => dispatch(toggleRecent(id));
 
-  const recommendedProjects = (projectList || []).slice(0, 6).map((project) => {
+  const recommendedProjects = filteredProjectList.slice(0, 6).map((project) => {
     const displayName = project.name || project.title || project.project_name || project.property_name || 'Project';
     const locationText = project.display_location || buildProjectAddress(project);
     const displayPrice = project.display_price
@@ -399,7 +421,11 @@ export default function Home() {
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 150 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
+      >
         {/* Header */}
         <View
           style={{
@@ -514,6 +540,15 @@ export default function Home() {
               <View className="flex-1 justify-center">
                 <AnimatedPlaceholder />
               </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/(screens)/location-picker')}
+              accessibilityRole="button"
+              accessibilityLabel="Choose location on map"
+              className="w-[44px] h-[44px] rounded-xl bg-white items-center justify-center"
+              style={{ shadowColor: "#edabd8ff", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 30, elevation: 4 }}
+            >
+              <MaterialCommunityIcons name="map-marker-radius-outline" size={20} color="#4A43EC" />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => dispatch(openFilter())} className="flex-row items-center bg-[#4A43EC] rounded-xl px-5 h-[44px] gap-2">
               <AntDesign name="spotify" size={18} color="#7F88E5" />

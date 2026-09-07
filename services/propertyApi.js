@@ -94,9 +94,9 @@ export const propertyApi = {
     },
 
     // Get property tour price trajectory for a project
-    getPriceTrajectory: (token, slug, params = {}) => {
+    getPriceTrajectory: (token, projectId, params = {}) => {
         const query = new URLSearchParams(params).toString();
-        return request(`/api/v1/property-tour/${slug}/price-trajectory${query ? `?${query}` : ''}`, {
+        return request(`/api/v1/projects/${encodeURIComponent(projectId)}/price-trajectory${query ? `?${query}` : ''}`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
         });

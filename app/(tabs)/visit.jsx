@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { View, Text, Pressable, ScrollView, Image, ActivityIndicator, StyleSheet, Alert, Linking, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, Image, ActivityIndicator, StyleSheet, Alert, Linking, Platform, RefreshControl } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import * as Location from "expo-location";
@@ -186,6 +186,7 @@ export default function Visit() {
   const { isLoggedIn, token } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [directionsVisitId, setDirectionsVisitId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (tab === "Book visit") {
@@ -201,9 +202,19 @@ export default function Visit() {
       const status = activeTab === "Upcoming"
         ? UPCOMING_VISIT_STATUSES
         : ALL_VISIT_STATUSES;
-      dispatch(fetchVisitListThunk(status));
+      return dispatch(fetchVisitListThunk(status));
     }
+    return Promise.resolve();
   }, [activeTab, dispatch, isLoggedIn, token]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshVisits();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshVisits]);
 
   useEffect(() => {
     refreshVisits();
@@ -446,7 +457,12 @@ export default function Visit() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: activeTab === "Book visit" && bookedSiteVisits.length > 0 ? 222 : 144 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: activeTab === "Book visit" && bookedSiteVisits.length > 0 ? 222 : 144 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
+      >
 
         {/* Book visit Tab */}
         {activeTab === "Book visit" && (

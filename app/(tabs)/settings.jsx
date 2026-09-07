@@ -96,12 +96,24 @@ export default function Settings() {
     const [biometricLockOn, setBiometricLockOn] = useState(false);
     const [biometricLabel, setBiometricLabel] = useState("Biometric Lock");
     const [biometricBusy, setBiometricBusy] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const { profile, user, profileLoading, profileError, isLoggedIn, token, profilePictureLoading } = useSelector((state) => state.auth);
 
     useFocusEffect(useCallback(() => {
         if (isLoggedIn) dispatch(fetchProfileThunk());
     }, [isLoggedIn, dispatch]));
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            if (isLoggedIn) {
+                await dispatch(fetchProfileThunk());
+            }
+        } finally {
+            setRefreshing(false);
+        }
+    }, [dispatch, isLoggedIn]);
 
     useEffect(() => {
         (async () => {
@@ -252,7 +264,7 @@ export default function Settings() {
                 }}
             />
             <ScrollView
-                refreshControl={<RefreshControl refreshing={profileLoading && !!profile} onRefresh={() => dispatch(fetchProfileThunk())} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 210 }}
             >

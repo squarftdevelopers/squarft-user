@@ -216,10 +216,13 @@ export default function Overview({ project }) {
                         </View>
                     </View>
                 ))}
+                {(project.variants || project.floorPlans || []).length === 0 && (
+                    <EmptySection label="Unit configurations are not available for this project yet." width={280} />
+                )}
             </ScrollView>
 
             {/* Posted by */}
-            <View className="mx-6 mb-7 bg-white mt-5 rounded-2xl p-4 flex-row items-center justify-between" style={cardShadow}>
+            {project.builder && project.developerId ? <View className="mx-6 mb-7 bg-white mt-5 rounded-2xl p-4 flex-row items-center justify-between" style={cardShadow}>
                 <View className="flex-row items-center gap-3 flex-1">
                     <View className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100">
                         <Image source={project.builderLogo || project.imageMain} className="w-full h-full" resizeMode="cover" />
@@ -233,7 +236,7 @@ export default function Overview({ project }) {
                 <TouchableOpacity onPress={() => setBuilderModalVisible(true)} className="border border-indigo-500 rounded-xl px-4 py-2.5 ml-3">
                     <Text className="text-[12px] font-manrope-bold text-indigo-600">View Details</Text>
                 </TouchableOpacity>
-            </View>
+            </View> : null}
 
             <BuilderModal
                 visible={builderModalVisible}
@@ -282,27 +285,21 @@ export default function Overview({ project }) {
                 )}
             </View>
             {/* About card */}
-            <View className="mx-6 mb-3 mt-4 bg-white rounded-2xl p-4" style={cardShadow}>
+            {project.description ? <View className="mx-6 mb-3 mt-4 bg-white rounded-2xl p-4" style={cardShadow}>
                 <Text className="text-[15px] font-manrope-bold text-[#1A1A1A] mt-1 mb-3">About {project.name}</Text>
-                {(project.description
-                    ? [project.description]
-                    : [
-                        "Description not available for this project yet.",
-                    ]
-                ).map((point, i) => (
+                {[project.description].map((point, i) => (
                     <View key={i} className="flex-row gap-2 mb-2">
                         <Text className="text-[#5E23DC] text-[18px] -top-[1px]">•</Text>
                         <Text className="text-[12px] font-manrope-regular text-[#4B5563] flex-1 leading-6 mb-1">{point}</Text>
                     </View>
                 ))}
-            </View>
+            </View> : null}
 
             {/* Brochure download */}
 
-            <TouchableOpacity
-                disabled={!brochureUrl}
+            {brochureUrl ? <TouchableOpacity
                 onPress={handleOpenBrochure}
-                style={{ backgroundColor: "#6C3BFF2A", borderColor: "#6C3BFF1A", opacity: brochureUrl ? 1 : 0.65 }}
+                style={{ backgroundColor: "#6C3BFF2A", borderColor: "#6C3BFF1A" }}
                 className=" mx-6 mb-6 mt-5 border rounded-2xl p-4 flex-row items-center gap-3"
             >
                 <View className="w-16 h-16 bg-indigo-600 rounded-2xl items-center justify-center">
@@ -311,11 +308,11 @@ export default function Overview({ project }) {
                 <View className="flex-1">
                     <Text className="text-[15px] font-public-bold text-gray-900">{brochureLabel}</Text>
                     <Text className="text-[11px] font-public-regular text-[#64748B] mt-0.5">
-                        {brochureUrl ? "PDF document" : "Brochure not available"}
+                        PDF document
                     </Text>
                 </View>
-                <Text className="text-[12px] font-public-bold text-[#4A43EC] tracking-wide">{brochureUrl ? "DOWNLOAD" : "N/A"}</Text>
-            </TouchableOpacity>
+                <Text className="text-[12px] font-public-bold text-[#4A43EC] tracking-wide">DOWNLOAD</Text>
+            </TouchableOpacity> : null}
 
             {/* Resale properties */}
             <ImageBackground

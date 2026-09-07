@@ -1,11 +1,10 @@
-import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { selectSeenProjects } from '../../store/slices/projectViewTrackingSlice';
 import { fetchProjectListThunk } from '../../store/slices/projectSlice';
-import { allProjects as localProjects } from '../../data/projects';
 import { buildProjectAddress, buildProjectPrice } from '../../services/projectDisplay';
 
 const toImageSource = (value) => {
@@ -23,10 +22,9 @@ const findProjectByTracker = (tracker, projects) =>
 /**
  * SeenTabContent Component
  * 
- * Displays projects that have been viewed 5+ times within the last 7 days.
- * Uses memoized selector to derive filtered data from Redux state.
+ * Displays projects viewed 5+ times in the last 7 days, using persisted API activity.
  */
-export default function SeenTabContent() {
+export default function SeenTabContent({ refreshing = false, onRefresh }) {
   const dispatch = useDispatch();
   
   // Select all qualified "seen" projects (count >= 5, not expired)
@@ -41,7 +39,7 @@ export default function SeenTabContent() {
   
   // Memoize the display data
   const displayProjects = useMemo(() => {
-    const projectSource = [...apiProjects, ...localProjects];
+    const projectSource = apiProjects;
 
     return seenTrackers.map((tracker) => {
       const project = findProjectByTracker(tracker, projectSource);
@@ -69,8 +67,11 @@ export default function SeenTabContent() {
 
   const renderSeenProject = ({ item }) => {
     // Calculate days remaining
-    const daysRemaining = item.firstQualifiedAt 
-      ? Math.ceil((7 * 24 * 60 * 60 * 1000 - (Date.now() - item.firstQualifiedAt)) / (24 * 60 * 60 * 1000))
+    const qualifiedAt = typeof item.firstQualifiedAt === 'number'
+      ? item.firstQualifiedAt
+      : Date.parse(item.firstQualifiedAt);
+    const daysRemaining = Number.isFinite(qualifiedAt)
+      ? Math.max(0, Math.ceil((7 * 24 * 60 * 60 * 1000 - (Date.now() - qualifiedAt)) / (24 * 60 * 60 * 1000)))
       : 0;
 
     const imageSource = toImageSource(item.image);
@@ -151,6 +152,7 @@ export default function SeenTabContent() {
         contentContainerStyle={{ paddingTop: 12, paddingBottom: 70 }}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
       />
     </View>
   );

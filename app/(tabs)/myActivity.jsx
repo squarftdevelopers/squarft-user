@@ -9,8 +9,9 @@ import SeenTabContent from "../../components/myActivity/SeenTabContent";
 import ContactedTabContent from "../../components/myActivity/ContactedTabContent";
 import RecentTabContent from "../../components/myActivity/RecentTabContent";
 import { fetchContactedPropertiesThunk, fetchSavedPropertiesThunk } from "../../store/slices/propertiesSlice";
-import { selectSeenProjects } from "../../store/slices/projectViewTrackingSlice";
-import { selectRecentProjectsCount } from "../../store/slices/recentProjectsSlice";
+import { fetchProjectListThunk } from "../../store/slices/projectSlice";
+import { fetchSeenProjects, selectSeenProjects } from "../../store/slices/projectViewTrackingSlice";
+import { fetchRecentProjects, selectRecentProjectsCount } from "../../store/slices/recentProjectsSlice";
 import { useRefetchOnForeground } from "../../hooks/useRefetchOnForeground";
 
 export default function Favourite() {
@@ -19,6 +20,7 @@ export default function Favourite() {
   const [activeTab, setActiveTab] = useState("SAVED");
   const { savedProperties, contactedProperties } = useSelector((state) => state.properties);
   const { isLoggedIn, token } = useSelector((state) => state.auth);
+  const [refreshing, setRefreshing] = useState(false);
   const seenProjects = useSelector(selectSeenProjects);
   const recentProjectsCount = useSelector(selectRecentProjectsCount);
   const savedCount = savedProperties.length;
@@ -34,10 +36,24 @@ export default function Favourite() {
   ];
 
   const refreshActivity = useCallback(() => {
-    if (!isLoggedIn || !token) return;
-    dispatch(fetchSavedPropertiesThunk());
-    dispatch(fetchContactedPropertiesThunk());
+    if (!isLoggedIn || !token) return Promise.resolve();
+    return Promise.allSettled([
+      dispatch(fetchSavedPropertiesThunk()),
+      dispatch(fetchContactedPropertiesThunk()),
+      dispatch(fetchProjectListThunk()),
+      dispatch(fetchSeenProjects()),
+      dispatch(fetchRecentProjects()),
+    ]);
   }, [dispatch, isLoggedIn, token]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshActivity();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshActivity]);
 
   useFocusEffect(
     useCallback(() => {
@@ -92,10 +108,10 @@ export default function Favourite() {
         </View>
         <View className="w-full h-[1px] bg-gray-100/30 " />
         <View className="flex-1">
-          {activeTab === "SAVED" && <SavedTabContent />}
-          {activeTab === "SEEN" && <SeenTabContent />}
-          {activeTab === "CONTACTED" && <ContactedTabContent />}
-          {activeTab === "RECENT" && <RecentTabContent />}
+          {activeTab === "SAVED" && <SavedTabContent refreshing={refreshing} onRefresh={onRefresh} />}
+          {activeTab === "SEEN" && <SeenTabContent refreshing={refreshing} onRefresh={onRefresh} />}
+          {activeTab === "CONTACTED" && <ContactedTabContent refreshing={refreshing} onRefresh={onRefresh} />}
+          {activeTab === "RECENT" && <RecentTabContent refreshing={refreshing} onRefresh={onRefresh} />}
         </View>
       </View>
     </View>

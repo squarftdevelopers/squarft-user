@@ -216,7 +216,7 @@ export default function FilterModal() {
         if (!subTypeEnabled && propertySubTypes.length > 0) {
             dispatch(clearSubTypes());
         }
-    }, [subTypeEnabled]);
+    }, [dispatch, propertySubTypes.length, subTypeEnabled]);
     const sheetProgress = useRef(new Animated.Value(1)).current;
     const backdropOpacity = useRef(new Animated.Value(0)).current;
 
@@ -377,20 +377,20 @@ export default function FilterModal() {
                         <TouchableOpacity
                             disabled={geocoding}
                             onPress={async () => {
-                                dispatch(setAddress(localAddress));
+                                let selectedCoordinates = locationCoordinates;
+                                const addressChanged = localAddress !== address;
                                 
-                                // If address is entered but no coordinates, try to geocode
-                                if (localAddress && !locationCoordinates) {
+                                // If address is entered but no coordinates, try to geocode.
+                                // If the text changed after choosing from the map, geocode the new text
+                                // instead of keeping stale map coordinates.
+                                if (localAddress && (!selectedCoordinates || addressChanged)) {
                                     setGeocoding(true);
                                     try {
                                         const geocodingService = getGeocodingService();
                                         if (geocodingService) {
                                             const coordinates = await geocodingService.geocodeAddress(localAddress);
                                             if (coordinates) {
-                                                dispatch(setFilterLocation({ 
-                                                    address: localAddress, 
-                                                    coordinates 
-                                                }));
+                                                selectedCoordinates = coordinates;
                                             }
                                         }
                                     } catch (error) {
@@ -399,6 +399,15 @@ export default function FilterModal() {
                                     } finally {
                                         setGeocoding(false);
                                     }
+                                }
+
+                                if (selectedCoordinates && localAddress) {
+                                    dispatch(setFilterLocation({
+                                        address: localAddress,
+                                        coordinates: selectedCoordinates,
+                                    }));
+                                } else {
+                                    dispatch(setAddress(localAddress));
                                 }
                                 
                                 dispatch(closeFilter());

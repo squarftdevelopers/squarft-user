@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, Text, Pressable, ScrollView, Image } from "react-native";
+import { View, Text, Pressable, ScrollView, Image, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useSelector, useDispatch } from "react-redux";
@@ -30,7 +30,7 @@ const getImageUrl = (image) => {
   return image.url || image.thumbnail_url || null;
 };
 
-const ContactedTabContent = () => {
+const ContactedTabContent = ({ refreshing = false, onRefresh }) => {
   const dispatch = useDispatch();
   const { contactedProperties, loading } = useSelector((state) => state.properties);
   const { isLoggedIn, token } = useSelector((state) => state.auth);
@@ -70,7 +70,12 @@ const ContactedTabContent = () => {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      className="flex-1 bg-white"
+      contentContainerStyle={{ paddingBottom: 150 }}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
+    >
       <StatusBar style="dark" />
       <View className="mt-10 px-4 mb-6">
         {contactedProperties.map((property, index) => {

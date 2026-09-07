@@ -8,6 +8,21 @@ import { Shimmer } from "../SkeletonLoader";
 
 const PERIODS = ["1Y", "3Y", "5Y"];
 
+const formatCompactPrice = (value) => {
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount <= 0) return '';
+    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(amount % 10000000 === 0 ? 0 : 1)} Cr`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(amount % 100000 === 0 ? 0 : 1)} L`;
+    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+};
+
+const formatPriceRange = (min, max) => {
+    const from = formatCompactPrice(min);
+    const to = formatCompactPrice(max);
+    if (from && to) return from === to ? from : `${from} - ${to}`;
+    return from || to;
+};
+
 function PropertyTourSkeleton() {
     return (
         <View style={{ paddingBottom: 16 }}>
@@ -44,13 +59,7 @@ const generateXLabels = (chartData, period) => {
         return indices.map((i, idx) => idx === indices.length - 1 ? 'PRESENT' : chartData[i].month);
     }
 
-    // Fallback static labels
-    const labels = {
-        "1Y": ["JAN 2024", "APR 2024", "JUL 2024", "PRESENT"],
-        "3Y": ["JAN 2022", "JAN 2023", "JAN 2024", "PRESENT"],
-        "5Y": ["JAN 2021", "JAN 2022", "JAN 2023", "PRESENT"],
-    };
-    return labels[period] || labels["3Y"];
+    return [];
 };
 
 function MarketGraph({ chartData, period }) {
@@ -160,7 +169,7 @@ export default function PropertyTour({ project }) {
     // Fetch price trajectory data when period or project changes
     useEffect(() => {
         const fetchTrajectory = async () => {
-            if (!project?.slug && !project?.id) return;
+            if (!project?.id) return;
             if (!token) {
                 console.warn('No token available for price trajectory');
                 setLoading(false);
@@ -169,20 +178,20 @@ export default function PropertyTour({ project }) {
 
             setLoading(true);
             try {
-                const slug = project.slug || project.id;
-                const response = await propertyApi.getPriceTrajectory(token, slug, { period });
+                const response = await propertyApi.getPriceTrajectory(token, project.id, { period });
                 if (response.success && response.data) {
                     setTrajectoryData(response.data);
                 }
             } catch (error) {
-                console.error('Failed to fetch price trajectory:', error);
+                setTrajectoryData(null);
+                console.warn('Price trajectory unavailable:', error.message);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchTrajectory();
-    }, [project, period, token]);
+    }, [project?.id, period, token]);
 
     // Fetch recommended projects
     useEffect(() => {
@@ -210,12 +219,18 @@ export default function PropertyTour({ project }) {
         };
 
         fetchRecommended();
-    }, [project, token]);
+    }, [project?.city, token]);
 
-    const locationLabel = trajectoryData?.location || project?.location?.split(',')[0] || 'Location';
-    const currentPriceFormatted = trajectoryData?.current_price_formatted || '₹8,500/sq.ft.';
-    const appreciationLabel = trajectoryData?.appreciation_label || '+12.4%';
-    const marketHealth = trajectoryData?.market_health || 'Strong Appreciation';
+    const locationLabel = trajectoryData?.location || project?.location?.split(',')[0] || '';
+    const currentPriceFormatted = trajectoryData?.current_price_formatted
+        || formatPriceRange(trajectoryData?.current_price_from, trajectoryData?.current_price_to);
+    const appreciationLabel = trajectoryData?.appreciation_label
+        || (trajectoryData?.appreciation_pct !== null
+            && trajectoryData?.appreciation_pct !== undefined
+            && Number.isFinite(Number(trajectoryData.appreciation_pct))
+            ? `${Number(trajectoryData.appreciation_pct) >= 0 ? '+' : ''}${Number(trajectoryData.appreciation_pct).toFixed(1)}%`
+            : '');
+    const marketHealth = trajectoryData?.market_health || '';
     const periodLabel = period === '1Y' ? '1 YEAR' : period === '3Y' ? '3 YEAR' : '5 YEAR';
 
     // Market health color based on status
@@ -228,6 +243,16 @@ export default function PropertyTour({ project }) {
     };
 
     if (loading) return <PropertyTourSkeleton />;
+    if (!trajectoryData || !currentPriceFormatted) {
+        return (
+            <View style={{ paddingHorizontal: 20, paddingVertical: 28, alignItems: 'center' }}>
+                <MaterialCommunityIcons name="chart-line" size={30} color="#9CA3AF" />
+                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 10, textAlign: 'center' }}>
+                    Price trajectory is not available for this project yet.
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <View style={{ paddingBottom: 16 }}>
@@ -250,12 +275,12 @@ export default function PropertyTour({ project }) {
                     <View style={{ alignItems: 'flex-end' }}>
                         <>
                                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#5308E7' }}>
-                                    {currentPriceFormatted.split('/')[0]} <Text style={{ fontSize: 12, color: 'black', fontWeight: '400' }}>/sq.ft.</Text>
+                                    {currentPriceFormatted}
                                 </Text>
                             
-                                <View style={{ backgroundColor: '#FFDBCC', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 }}>
+                                {appreciationLabel ? <View style={{ backgroundColor: '#FFDBCC', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 }}>
                                     <Text style={{ fontSize: 14, color: '#873600', fontWeight: '700' }}>{appreciationLabel}</Text>
-                                </View>
+                                </View> : null}
                         </>
                     </View>
                 </View>
@@ -303,16 +328,13 @@ export default function PropertyTour({ project }) {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 36 }}>
                     <View>
                         <Text style={{ fontSize: 10, color: 'black', fontWeight: '700', letterSpacing: 0.5 }}>MARKET HEALTH</Text>
-                        <Text style={{ fontSize: 15, fontWeight: '700', color: getMarketHealthColor(marketHealth), marginTop: 4 }}>
-                                {marketHealth}
-                        </Text>
+                        {marketHealth ? <Text style={{ fontSize: 15, fontWeight: '700', color: getMarketHealthColor(marketHealth), marginTop: 4 }}>
+                            {marketHealth}
+                        </Text> : null}
                     </View>
-                    <TouchableOpacity style={{ marginBottom: 20 }}>
-                        <MaterialCommunityIcons name="dots-horizontal" size={24} color="#D1D5DB" />
-                    </TouchableOpacity>
                 </View>
-                <View style={{ width: '85%', alignSelf: 'center', marginRight: 60 }}>
-                    <MarketGraph chartData={trajectoryData?.chart_data} period={period} />
+                    <View style={{ width: '85%', alignSelf: 'center', marginRight: 60 }}>
+                    <MarketGraph chartData={trajectoryData?.chart_data || trajectoryData?.history} period={period} />
                 </View>
             </View>
 

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { projectApi } from '../../services/projectApi';
 
 // AsyncStorage key for recent projects tracking
 const RECENT_STORAGE_KEY = '@squarft_recent_projects';
@@ -116,6 +117,20 @@ export const hydrateAndCleanRecentTrackers = createAsyncThunk(
     }
 );
 
+export const fetchRecentProjects = createAsyncThunk(
+    'recentProjects/fetchRecent',
+    async (_, { getState, rejectWithValue }) => {
+        try {
+            const { token } = getState().auth;
+            if (!token) return [];
+            const response = await projectApi.getRecentProjectViews(token);
+            return Array.isArray(response?.data) ? response.data : [];
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    },
+);
+
 /**
  * Clear all recent projects (utility for testing/reset)
  */
@@ -172,6 +187,18 @@ const recentProjectsSlice = createSlice({
                 state.recentTrackers = action.payload;
             })
             .addCase(hydrateAndCleanRecentTrackers.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            .addCase(fetchRecentProjects.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchRecentProjects.fulfilled, (state, action) => {
+                state.loading = false;
+                state.recentTrackers = action.payload;
+            })
+            .addCase(fetchRecentProjects.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })

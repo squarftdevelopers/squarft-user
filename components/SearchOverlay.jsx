@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import { openFilter, setSearchQuery } from "../store/slices/filterSlice";
 import { getTrendingSearchesThunk, getTrendingLocationsThunk, getSearchHistoryThunk, saveSearchHistoryThunk, deleteSearchHistoryThunk, clearAllSearchHistoryThunk, searchPropertiesAndProjectsThunk } from "../store/slices/searchSlice";
 import { fetchNearbyProjectsThunk, fetchProjectListThunk } from "../store/slices/projectSlice";
+import { applyProjectFilters } from "../services/projectFilters";
 
 
 
@@ -378,17 +379,24 @@ export default function SearchOverlay({ value, onChangeText, onClose, insets }) 
     }, [coordinates, debouncedQuery, dispatch]);
 
     const localSuggestions = debouncedQuery
-        ? projectList.filter((project) => {
-            const query = debouncedQuery.toLowerCase();
-            return [project.name, project.title, project.area, project.city, project.location]
-                .some((value) => String(value || '').toLowerCase().includes(query));
+        ? applyProjectFilters(projectList, {
+            searchQuery: debouncedQuery,
+            address: '', locationCoordinates: null, propertyTypes: [], propertySubTypes: [],
+            budgetRange: [2000000, 50000000], areaRange: [0, 5000], possessionStatus: [], reraOnly: false,
         }).slice(0, 20).map((project) => ({
             ...project,
             type: 'project',
             title: project.title || project.name,
         }))
         : [];
-    const displayedSuggestions = suggestions.length > 0 ? suggestions : localSuggestions;
+    const displayedSuggestions = localSuggestions.length > 0 ? localSuggestions : suggestions;
+
+    const handleSubmitSearch = useCallback(() => {
+        const searchTerm = value.trim();
+        if (!searchTerm) return;
+        dispatch(setSearchQuery(searchTerm));
+        router.push('/(screens)/property-listing');
+    }, [dispatch, value]);
 
     const handleSelect = useCallback((selection) => {
         const isResult = typeof selection === 'object' && selection !== null;
@@ -557,6 +565,7 @@ export default function SearchOverlay({ value, onChangeText, onClose, insets }) 
                             ref={inputRef}
                             value={value}
                             onChangeText={onChangeText}
+                            onSubmitEditing={handleSubmitSearch}
                             placeholder="Search..."
                             placeholderTextColor="#9CA3AF"
                             autoFocus
@@ -597,13 +606,14 @@ export default function SearchOverlay({ value, onChangeText, onClose, insets }) 
                         </Text>
                     ) : null}
                     <View style={{    height: 1 ,marginHorizontal: 18, borderWidth:0.5, borderColor: '#ebe6ebff' }} />
-                    {/* <TouchableOpacity
+                    <TouchableOpacity
+                        onPress={() => router.push('/(screens)/location-picker')}
                         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 16, gap: 14 }}
                     >
-                        <MaterialCommunityIcons name="plus" size={22} color="#E8336D" />
-                        <Text style={{ fontSize: 15, fontWeight: '500', color: '#E8336D', flex: 1 }}>Add New Address</Text>
+                        <MaterialCommunityIcons name="map-marker-radius-outline" size={22} color="#E8336D" />
+                        <Text style={{ fontSize: 15, fontWeight: '500', color: '#E8336D', flex: 1 }}>Choose location on map</Text>
                         <Ionicons name="chevron-forward" size={18} color="#E8336D" />
-                    </TouchableOpacity> */}
+                    </TouchableOpacity>
                 </View>
             </Animated.View>
 

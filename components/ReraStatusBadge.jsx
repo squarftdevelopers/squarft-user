@@ -1,25 +1,6 @@
 import { View, Text } from "react-native";
 import { Feather } from "@expo/vector-icons";
-
-export function isReraApproved(item = {}) {
-  if (item?.rera && typeof item.rera === "object" && item.rera.is_approved !== undefined) {
-    return Boolean(item.rera.is_approved);
-  }
-
-  if (item?.rera && typeof item.rera === "object" && item.rera.approved !== undefined) {
-    return Boolean(item.rera.approved);
-  }
-
-  if (item?.rera_approved !== undefined) return Boolean(item.rera_approved);
-  if (item?.reraApproved !== undefined) return Boolean(item.reraApproved);
-  if (item?.rea_approved !== undefined) return Boolean(item.rea_approved);
-  if (item?.is_rea_approved !== undefined) return Boolean(item.is_rea_approved);
-  if (typeof item?.rera === "boolean") return item.rera;
-  if (typeof item?.rera_status === "string") return item.rera_status.toLowerCase() === "approved";
-  if (typeof item?.rea_status === "string") return item.rea_status.toLowerCase() === "approved";
-
-  return Boolean(item?.rera_id || item?.reraId || item?.rera_number || item?.reraNumber);
-}
+export { isReraApproved } from "../services/projectFilters";
 
 export default function ReraStatusBadge({
   approved,

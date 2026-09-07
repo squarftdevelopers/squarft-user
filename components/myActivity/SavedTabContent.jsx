@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { View, Text, Pressable, ScrollView, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, Pressable, ScrollView, Image, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useSelector, useDispatch } from "react-redux";
@@ -9,6 +9,7 @@ import { fetchSavedPropertiesThunk } from "../../store/slices/propertiesSlice";
 import { fetchProjectListThunk } from "../../store/slices/projectSlice";
 import { PropertyCardSkeleton } from "../SkeletonLoader";
 import ReraStatusBadge, { isReraApproved } from "../ReraStatusBadge";
+import ImageLightbox from "../ImageLightbox";
 import {
   getSavedItemDetails,
   getSavedItemId,
@@ -16,15 +17,15 @@ import {
   getSavedLocation,
   getSavedPrice,
   getSavedPrimaryImage,
-  getSavedSecondaryImage,
   getSavedSummary,
 } from "../../services/savedItemDisplay";
 
-const SavedTabContent = () => {
+const SavedTabContent = ({ refreshing = false, onRefresh }) => {
   const dispatch = useDispatch();
   const { savedProperties, loading } = useSelector((state) => state.properties);
   const { list: projectList } = useSelector((state) => state.project);
   const { isLoggedIn, token } = useSelector((state) => state.auth);
+  const [galleryImages, setGalleryImages] = useState([]);
 
   useEffect(() => {
     if (isLoggedIn && token) {
@@ -59,7 +60,12 @@ const SavedTabContent = () => {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      className="flex-1 bg-white"
+      contentContainerStyle={{ paddingBottom: 150 }}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
+    >
       <StatusBar style="dark" />
       <View className="mt-10 px-4 mb-6">
         {savedProperties.map((item, index) => {
@@ -68,42 +74,40 @@ const SavedTabContent = () => {
           const details = getSavedItemDetails(item, projectList);
           const itemId = getSavedItemId(item);
           const primaryImage = getSavedPrimaryImage(details);
-          const secondaryImage = getSavedSecondaryImage(details);
-          const imageCount = details.total_images || details.images?.length || (primaryImage ? 1 : 0);
+          const cardImages = [...new Set([
+            primaryImage,
+            ...(details.images || []).map((image) => typeof image === "string" ? image : image?.url || image?.thumbnail_url),
+          ].filter(Boolean))];
           const location = getSavedLocation(details);
           const price = getSavedPrice(details);
           const summaryText = getSavedSummary(details, !isPropertyType);
 
           return (
             <View key={`${itemId || index}-${index}`} className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-10">
-              <View className="flex-row h-36 w-full">
-                <View className="flex-[2] relative bg-gray-200 border-r-2 border-white">
+              <Pressable
+                disabled={!primaryImage}
+                onPress={() => setGalleryImages(cardImages)}
+                className="h-36 relative"
+              >
                   {primaryImage ? (
                     <Image source={{ uri: primaryImage }} className="w-full h-full" resizeMode="cover" />
                   ) : (
-                    <View className="w-full h-full bg-gray-200 items-center justify-center">
+                    <View className="w-full h-full bg-[#F4F7FF] items-center justify-center">
                       <Feather name="image" size={32} color="#9CA3AF" />
                     </View>
                   )}
-                  <View className="absolute top-2 left-2 bg-black/60 px-2 py-1 rounded">
+                  {primaryImage && <View className="absolute top-2 left-2 bg-black/40 px-2 py-0.5 rounded-md">
                     <Text className="text-white text-[10px] font-manrope">
                       {isPropertyType ? (details.type || "Property") : "Project"}
                     </Text>
-                  </View>
-                </View>
-                <View className="flex-[1] relative bg-gray-200">
-                  {secondaryImage ? (
-                    <Image source={{ uri: secondaryImage }} className="w-full h-full" resizeMode="cover" />
-                  ) : (
-                    <View className="w-full h-full bg-gray-100 items-center justify-center">
-                      <Feather name="image" size={24} color="#D1D5DB" />
+                  </View>}
+                  {cardImages.length > 1 && (
+                    <View className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded-md flex-row items-center">
+                      <Feather name="images" size={11} color="white" />
+                      <Text className="text-white text-[9px] font-manrope-bold ml-1">View {cardImages.length} Photos</Text>
                     </View>
                   )}
-                  <View className="absolute bottom-2 right-2 bg-black/60 px-2 py-[2px] rounded">
-                    <Text className="text-white text-[10px] font-manrope">1/{Math.max(imageCount, 1)}</Text>
-                  </View>
-                </View>
-              </View>
+              </Pressable>
 
               <View className="px-3 pt-3 pb-2">
                 <Text className="text-[10px] text-[#6B7280] font-manrope mb-[4px]" numberOfLines={1}>
@@ -144,6 +148,8 @@ const SavedTabContent = () => {
           );
         })}
       </View>
+
+      <ImageLightbox visible={galleryImages.length > 0} images={galleryImages} onClose={() => setGalleryImages([])} />
 
       <View className="px-4">
         <View className="flex-row justify-between items-center mb-3">

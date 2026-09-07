@@ -7,53 +7,24 @@ import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import BudgetFilterModal from "../../components/BudgetFilterModal";
 import BHKFilterModal from "../../components/BHKFilterModal";
 import PossessionFilterModal from "../../components/PossessionFilterModal";
-import { openBudgetFilter, setSearchQuery, clearNonTypeFilters, togglePropertyType, clearPropertyTypes, openFilter, clearFilters } from "../../store/slices/filterSlice";
+import { openBudgetFilter, setSearchQuery, clearNonTypeFilters, clearPropertyTypes, openFilter, clearFilters } from "../../store/slices/filterSlice";
 import { fetchFeaturedProjectsThunk, fetchNearbyProjectsThunk, fetchProjectListThunk, setMapProjects } from "../../store/slices/projectSlice";
 import { fetchHighGrowthProjectsThunk } from "../../store/slices/propertiesSlice";
 import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount } from "../../services/projectDisplay";
 import ReraStatusBadge, { isReraApproved } from "../../components/ReraStatusBadge";
+import { applyProjectFilters } from "../../services/projectFilters";
 
 // Filter constants
 const BUDGET_MIN = 2000000;
 const BUDGET_MAX = 50000000;
 const AREA_MIN = 0;
 const AREA_MAX = 5000;
-const SUBTYPE_FILTERS = ['Apartment', 'Villa', 'Plot', 'Shop', 'Office', 'Showroom', 'Rowhouse'];
-
 const normalizeText = (value) => String(value ?? '').toLowerCase().trim();
 const cleanDisplayText = (value) => {
     const text = String(value ?? '').replace(/\s+/g, ' ').trim();
     if (!text || ['none', 'null', 'undefined'].includes(text.toLowerCase())) return '';
     return text;
 };
-
-// Calculate distance between two coordinates in kilometers using Haversine formula
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-};
-
-const getSearchText = (project) => [
-    project.name,
-    project.title,
-    project.project_name,
-    project.property_name,
-    project.area,
-    project.city,
-    project.location,
-    project.pincode,
-    project.category,
-    project.property_type,
-    project.property_subtype,
-    project.type,
-].map(normalizeText).filter(Boolean).join(' ');
 
 const getNumber = (...values) => {
     for (const value of values) {
@@ -122,6 +93,7 @@ const getNestedUnits = (project) => [
     ...(Array.isArray(project.properties) ? project.properties : []),
     ...(Array.isArray(project.units) ? project.units : []),
     ...(Array.isArray(project.inventory_units) ? project.inventory_units : []),
+    ...(Array.isArray(project.inventory_configurations) ? project.inventory_configurations : []),
 ];
 
 const collectVariantPrices = (project) =>
@@ -138,71 +110,6 @@ const collectVariantPrices = (project) =>
         ])
         .map(parseProjectPriceAmount)
         .filter(Boolean);
-
-const getProjectArea = (project) =>
-    getNumber(project.total_area_sqft, project.area_sqft, project.areaSqft, project.total_area, project.carpet_area);
-
-const matchesPropertyType = (project, selectedTypes) => {
-    if (selectedTypes.length === 0) return true;
-
-    // Priority 1: Check available_subtypes array (most reliable)
-    if (Array.isArray(project.available_subtypes) && project.available_subtypes.length > 0) {
-        const subtypes = project.available_subtypes.map(normalizeText);
-        return selectedTypes.some((type) => {
-            const selected = normalizeText(type);
-            // Exact match or with 's' plural
-            return subtypes.some(subtype => 
-                subtype === selected || 
-                subtype === `${selected}s` || 
-                `${subtype}s` === selected
-            );
-        });
-    }
-
-    // Priority 2: Check nested units for their property types
-    const units = getNestedUnits(project);
-    if (units.length > 0) {
-        const unitTypes = units
-            .flatMap((unit) => [
-                unit?.property_type,
-                unit?.property_subtype,
-                unit?.sub_type,
-                unit?.type,
-            ])
-            .filter(Boolean)
-            .map(normalizeText);
-        
-        if (unitTypes.length > 0) {
-            return selectedTypes.some((type) => {
-                const selected = normalizeText(type);
-                return unitTypes.some(unitType => 
-                    unitType === selected || 
-                    unitType === `${selected}s` || 
-                    `${unitType}s` === selected
-                );
-            });
-        }
-    }
-
-    // Priority 3: Fallback to checking project-level fields
-    const projectTypes = [
-        project.property_type,
-        project.property_subtype,
-        project.category,
-        project.type,
-    ]
-        .filter(Boolean)
-        .map(normalizeText);
-
-    return selectedTypes.some((type) => {
-        const selected = normalizeText(type);
-        return projectTypes.some(projectType => 
-            projectType === selected || 
-            projectType === `${selected}s` || 
-            `${projectType}s` === selected
-        );
-    });
-};
 
 const getBhkValues = (project) => {
     const values = new Set();
@@ -246,24 +153,6 @@ const getBhkValues = (project) => {
     });
 
     return values;
-};
-
-const matchesBhk = (project, selectedSubTypes) => {
-    if (selectedSubTypes.length === 0) return true;
-
-    const bhkValues = getBhkValues(project);
-    return selectedSubTypes.some((subType) => {
-        const selected = normalizeText(subType).replace(/\s*bhk/g, '').trim();
-        const selectedNumber = parseFloat(selected);
-        const selectedIsPlus = selected.includes('+');
-
-        return [...bhkValues].some((value) => {
-            const bhkNumber = parseFloat(value);
-            if (!Number.isFinite(bhkNumber)) return false;
-            if (selectedIsPlus) return bhkNumber >= selectedNumber;
-            return bhkNumber === selectedNumber;
-        });
-    });
 };
 
 const getPossessionStatuses = (project) => {
@@ -366,7 +255,11 @@ const getPropertyTypeLabel = (rawType) => {
 };
 
 const getProjectConfigLabel = (project) => {
-    const rawType = project.property_type || project.property_subtype || project.sub_type || project.type;
+    const rawType = project.property_type
+        || project.property_subtype
+        || project.sub_type
+        || project.type
+        || (Array.isArray(project.available_subtypes) ? project.available_subtypes[0] : project.available_subtypes);
     const typeLabel = getPropertyTypeLabel(rawType);
     if (!typeLabel) return '';
 
@@ -399,7 +292,12 @@ const getUnitConfigRows = (project) => {
     };
 
     getNestedUnits(project).forEach((unit) => {
-        const label = unit?.configuration || unit?.bhk || unit?.title || unit?.property_subtype || unit?.type;
+        const rawLabel = unit?.configuration || unit?.bhk || unit?.title || unit?.property_subtype || unit?.type;
+        const rawType = unit?.inventory_type || unit?.property_type || project.property_type || project.type || project.available_subtypes?.[0];
+        const typeLabel = getPropertyTypeLabel(rawType);
+        const label = rawLabel && typeLabel && !normalizeText(rawLabel).includes(normalizeText(typeLabel))
+            ? `${rawLabel} ${typeLabel}`
+            : rawLabel;
         const minPrice = unit?.price_from ?? unit?.min_price ?? unit?.base_price ?? unit?.price;
         const maxPrice = unit?.price_to ?? unit?.max_price ?? unit?.price;
         addRow(label, minPrice);
@@ -427,73 +325,7 @@ const formatConfigPrice = (row) => {
 };
 
 function applyFilters(projects, filter) {
-    return projects.filter((p) => {
-        const searchText = getSearchText(p);
-
-        // Location-based filtering (prioritize coordinates over text)
-        if (filter.locationCoordinates) {
-            // If coordinates are available, calculate distance
-            const projectLat = p.latitude ?? p.lat;
-            const projectLng = p.longitude ?? p.lng ?? p.lon;
-            
-            if (projectLat != null && projectLng != null) {
-                const distance = calculateDistance(
-                    filter.locationCoordinates.latitude,
-                    filter.locationCoordinates.longitude,
-                    projectLat,
-                    projectLng
-                );
-                // Filter projects within 10km radius
-                if (distance > 10) return false;
-            }
-        } else if (filter.address) {
-            // Fallback to text-based location matching if no coordinates
-            const q = filter.address.toLowerCase().trim();
-            if (!searchText.includes(q)) return false;
-        }
-
-        if (filter.searchQuery) {
-            const q = filter.searchQuery.toLowerCase().trim();
-            const bhkMatch = q.match(/\b([1-5])\s*(?:bhk|bedroom|bed)\b/);
-            const subtypeMatch = q.match(/\b(apartment|flat|villa|bungalow|plot|land|shop|office|showroom|rowhouse|townhouse)\b/);
-            if (bhkMatch && !matchesBhk(p, [`${bhkMatch[1]} BHK`])) return false;
-            if (subtypeMatch && !matchesPropertyType(p, [subtypeMatch[1]])) return false;
-
-            const remainingText = q
-                .replace(/\b[1-5]\s*(?:bhk|bedroom|bed)\b/g, ' ')
-                .replace(/\b(apartment|flat|villa|bungalow|plot|land|shop|office|showroom|rowhouse|townhouse)\b/g, ' ')
-                .replace(/\b(in|at|near)\b/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-            if (remainingText && !searchText.includes(remainingText)) return false;
-        }
-
-        if (!matchesPropertyType(p, filter.propertyTypes)) return false;
-        if (!matchesBhk(p, filter.propertySubTypes)) return false;
-
-        const priceRange = getProjectPriceRange(p);
-        const budgetLowerActive = filter.budgetRange[0] > BUDGET_MIN;
-        const budgetUpperActive = filter.budgetRange[1] < BUDGET_MAX;
-        if ((budgetLowerActive || budgetUpperActive) && (!priceRange.min || !priceRange.max)) return false;
-        if (budgetLowerActive && priceRange.max < filter.budgetRange[0]) return false;
-        if (budgetUpperActive && priceRange.min > filter.budgetRange[1]) return false;
-
-        const projectArea = getProjectArea(p);
-        const areaLowerActive = filter.areaRange[0] > AREA_MIN;
-        const areaUpperActive = filter.areaRange[1] < AREA_MAX;
-        if ((areaLowerActive || areaUpperActive) && !projectArea) return false;
-        if (areaLowerActive && projectArea < filter.areaRange[0]) return false;
-        if (areaUpperActive && projectArea > filter.areaRange[1]) return false;
-
-        if (filter.possessionStatus.length > 0) {
-            const statuses = getPossessionStatuses(p);
-            if (!filter.possessionStatus.some((status) => statuses.has(status) || status === getPossessionStatus(p))) return false;
-        }
-
-        if (filter.reraOnly && !hasRera(p)) return false;
-
-        return true;
-    });
+    return applyProjectFilters(projects, filter);
 }
 
 function ProjectCard({ item }) {
@@ -553,28 +385,30 @@ function ProjectCard({ item }) {
                     <View style={{ borderBottomWidth: 1, borderStyle: 'dashed', borderColor: '#E5E7EB' }} className="mb-2" />
 
                     {configRows.length > 0 ? (
-                        <View className="flex-row">
+                        <View style={{ flexDirection: 'row', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 12 }}>
                             <View style={{ flex: 1, paddingRight: 12 }}>
-                                {configRows.map((row) => (
-                                    <Text
-                                        key={row.label}
-                                        className="text-[13px] text-[#374151] font-manrope-extrabold uppercase mb-1"
-                                        numberOfLines={1}
-                                    >
-                                        {row.label}
-                                    </Text>
+                                {configRows.filter((_, index) => index % 2 === 0).map((row, index) => (
+                                    <View key={row.label} style={{ marginTop: index > 0 ? 12 : 0 }}>
+                                        <Text className="text-[13px] text-[#374151] font-manrope-extrabold uppercase" numberOfLines={1}>
+                                            {row.label}
+                                        </Text>
+                                        <Text className="text-[14px] text-[#111827] font-manrope-extrabold mt-1" numberOfLines={1}>
+                                            {formatConfigPrice(row)}
+                                        </Text>
+                                    </View>
                                 ))}
                             </View>
-                            <View style={{ width: 1, backgroundColor: '#E5E7EB' }} />
+                            <View style={{ width: 1, backgroundColor: '#E5E7EB', alignSelf: 'stretch' }} />
                             <View style={{ flex: 1, paddingLeft: 12 }}>
-                                {configRows.map((row) => (
-                                    <Text
-                                        key={row.label}
-                                        className="text-[18px] text-[#111827] font-manrope-extrabold mb-1"
-                                        numberOfLines={1}
-                                    >
-                                        {formatConfigPrice(row)}
-                                    </Text>
+                                {configRows.filter((_, index) => index % 2 === 1).map((row, index) => (
+                                    <View key={row.label} style={{ marginTop: index > 0 ? 12 : 0 }}>
+                                        <Text className="text-[13px] text-[#374151] font-manrope-extrabold uppercase" numberOfLines={1}>
+                                            {row.label}
+                                        </Text>
+                                        <Text className="text-[14px] text-[#111827] font-manrope-extrabold mt-1" numberOfLines={1}>
+                                            {formatConfigPrice(row)}
+                                        </Text>
+                                    </View>
                                 ))}
                             </View>
                         </View>

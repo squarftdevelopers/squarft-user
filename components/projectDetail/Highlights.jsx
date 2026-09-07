@@ -3,7 +3,6 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import Constants from "expo-constants";
-import { defaultLandmarks, defaultAmenities } from "../../data/projects";
 import { GeocodingService } from "../../services/geocoding/GeocodingService";
 import { fetchNearbyLandmarks } from "../../services/geocoding/nearbyLandmarks";
 
@@ -148,7 +147,7 @@ export default function Highlights({ project }) {
     const [googleLandmarks, setGoogleLandmarks] = useState([]);
     const [isLoadingLandmarks, setIsLoadingLandmarks] = useState(false);
     const hasBackendLandmarks = Array.isArray(project?.landmarks) && project.landmarks.length > 0;
-    const amenities = project?.amenities ?? defaultAmenities;
+    const amenities = Array.isArray(project?.amenities) ? project.amenities : [];
 
     useEffect(() => {
         if (hasBackendLandmarks || !GOOGLE_MAPS_API_KEY) return;
@@ -188,7 +187,7 @@ export default function Highlights({ project }) {
 
     const landmarks = hasBackendLandmarks
         ? project.landmarks
-        : (googleLandmarks.length > 0 ? googleLandmarks : defaultLandmarks);
+        : googleLandmarks;
 
     const allItems = showAll ? amenities : amenities.slice(0, VISIBLE_AMENITIES);
     const remaining = amenities.length - VISIBLE_AMENITIES;
@@ -234,13 +233,16 @@ export default function Highlights({ project }) {
                         <LandmarkCard item={item} onPress={() => openLandmarkOnMap(item, index)} />
                     </View>
                 ))}
+                {landmarks.length === 0 && (
+                    <Text style={{ marginHorizontal: 4, color: '#9CA3AF', fontSize: 13 }}>Nearby landmarks are not available for this project yet.</Text>
+                )}
             </View>
 
             <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', marginHorizontal: 16, marginTop: 20, marginBottom: 4 }}>
                 Amenities
             </Text>
 
-            <View style={{
+            {amenities.length > 0 ? <View style={{
                 marginHorizontal: 16, backgroundColor: '#fff',
                 borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB',
                 overflow: 'hidden',
@@ -284,7 +286,9 @@ export default function Highlights({ project }) {
                         <Text style={{ fontSize: 13, color: '#4A43EC', fontWeight: '600' }}>Show less ‹</Text>
                     </TouchableOpacity>
                 )}
-            </View>
+            </View> : (
+                <Text style={{ marginHorizontal: 16, color: '#9CA3AF', fontSize: 13 }}>Amenities are not available for this project yet.</Text>
+            )}
 
         </View>
     );

@@ -19,7 +19,10 @@ export function getSavedItemDetails(item = {}, projectList = []) {
   return {
     ...data,
     ...(matchedProject || {}),
-    ...data,
+    // The project list supplies a freshly signed cover URL. Keep it when the
+    // saved-item payload still contains a private storage key.
+    ...(data.cover_image_url?.startsWith?.('http') ? { cover_image_url: data.cover_image_url } : {}),
+    ...(Array.isArray(data.images) ? { images: data.images } : {}),
     id: data.id || matchedProject?.id || itemId,
     item_type: itemType,
   };

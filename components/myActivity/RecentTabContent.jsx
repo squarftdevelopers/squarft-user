@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { View, Text, Pressable, ScrollView, Image } from "react-native";
+import { View, Text, Pressable, ScrollView, Image, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useSelector, useDispatch } from "react-redux";
@@ -7,7 +7,6 @@ import { router } from "expo-router";
 import { selectRecentProjects, selectRecentProjectsLoading } from "../../store/slices/recentProjectsSlice";
 import { PropertyCardSkeleton } from "../SkeletonLoader";
 import { fetchProjectListThunk } from "../../store/slices/projectSlice";
-import { allProjects as localProjects } from "../../data/projects";
 import { buildProjectAddress, buildProjectPrice } from "../../services/projectDisplay";
 
 const toImageSource = (value) => {
@@ -28,20 +27,14 @@ const findProjectByTracker = (tracker, projects) =>
  * Displays projects that the user has recently viewed (within the last 3 days).
  * Projects are automatically tracked and sorted by most recent view first.
  * 
- * Integration:
- * 1. Add recentProjectsReducer to store
- * 2. Call hydrateAndCleanRecentTrackers() on app boot
- * 3. Call addToRecentProjects(projectId) when user opens a project
+ * Recent project views are persisted per authenticated user by the API.
  */
-const RecentTabContent = () => {
+const RecentTabContent = ({ refreshing = false, onRefresh }) => {
   const dispatch = useDispatch();
   const recentProjects = useSelector(selectRecentProjects);
   const loading = useSelector(selectRecentProjectsLoading);
 
-  // Get full project details from project slice or properties slice
-  // You'll need to join the recent tracker IDs with your actual project data
   const { list: allProjects } = useSelector((state) => state.project || {});
-  const { properties: allProperties } = useSelector((state) => state.properties || {});
 
   // Enrich recent trackers with full project data
   useEffect(() => {
@@ -52,7 +45,7 @@ const RecentTabContent = () => {
 
   const enrichedRecentProjects = useMemo(() => recentProjects
     .map((tracker) => {
-      const projectSource = [...(allProjects || []), ...localProjects];
+      const projectSource = allProjects || [];
       const project = findProjectByTracker(tracker, projectSource);
       if (project) {
         return {
@@ -61,27 +54,15 @@ const RecentTabContent = () => {
         };
       }
 
-      const property = allProperties?.find((p) => String(p.id) === String(tracker.id));
-      if (property) {
-        return {
-          ...property,
-          lastViewedAt: tracker.lastViewedAt,
-        };
-      }
-
-      // If not found in Redux, return minimal data
-      // In production, you might want to fetch the project details here
-      return {
-        id: tracker.id,
-        name: 'Unknown Project',
-        lastViewedAt: tracker.lastViewedAt,
-      };
+      return null;
     })
-    .filter(Boolean), [allProjects, allProperties, recentProjects]);
+    .filter(Boolean), [allProjects, recentProjects]);
 
   const formatTimeAgo = (timestamp) => {
     const now = Date.now();
-    const diff = now - timestamp;
+    const viewedAt = typeof timestamp === 'number' ? timestamp : Date.parse(timestamp);
+    if (!Number.isFinite(viewedAt)) return '';
+    const diff = Math.max(0, now - viewedAt);
     
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -125,6 +106,7 @@ const RecentTabContent = () => {
       className="flex-1 bg-white" 
       contentContainerStyle={{ paddingBottom: 150 }} 
       showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
     >
       <StatusBar style="dark" />
       <View className="mt-10 px-4 mb-6">

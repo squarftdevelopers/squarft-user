@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { createSelector } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { projectApi } from '../../services/projectApi';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -74,13 +74,19 @@ const isExpired = (tracker) => {
  */
 export const incrementProjectView = createAsyncThunk(
   'projectViewTracking/incrementView',
-  async (projectId, { rejectWithValue }) => {
+  async (projectId, { getState, rejectWithValue }) => {
     try {
       if (!projectId) {
         throw new Error('Project ID is required');
       }
 
-      // Read current trackers
+      const { token } = getState().auth;
+      if (token) {
+        await projectApi.recordProjectView(projectId, token);
+      }
+
+      // Keep a local copy for an offline-friendly immediate update. The
+      // server remains the source of truth when the activity screen refreshes.
       const trackers = await readTrackersFromStorage();
       
       // Find existing tracker or create new one
@@ -133,6 +139,20 @@ export const incrementProjectView = createAsyncThunk(
       return rejectWithValue(error.message);
     }
   }
+);
+
+export const fetchSeenProjects = createAsyncThunk(
+  'projectViewTracking/fetchSeen',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      if (!token) return [];
+      const response = await projectApi.getSeenProjectViews(token);
+      return Array.isArray(response?.data) ? response.data : [];
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
 );
 
 /**
@@ -224,6 +244,18 @@ const projectViewTrackingSlice = createSlice({
         state.viewTrackers = action.payload;
       })
       .addCase(incrementProjectView.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchSeenProjects.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchSeenProjects.fulfilled, (state, action) => {
+        state.loading = false;
+        state.viewTrackers = action.payload;
+      })
+      .addCase(fetchSeenProjects.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
