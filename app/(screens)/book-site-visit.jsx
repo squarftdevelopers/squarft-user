@@ -273,10 +273,12 @@ export default function BookSiteVisit() {
       propertyId: getPropertyIdForVisit(visit),
       slots: [],
       slotsLoading: false,
+      slotError: null,
       slotMeta: null,
       slot: null,
       officers: [],
       officersLoading: false,
+      officerError: null,
       officerMeta: null,
       officerDropdownOpen: false,
       officerId: null,
@@ -314,7 +316,7 @@ export default function BookSiteVisit() {
     let cancelled = false;
     const index = activeIndex;
 
-    updateBookingAt(index, { slotsLoading: true });
+    updateBookingAt(index, { slotsLoading: true, slotError: null });
     visitApi.getAvailableSlots(token, activeBooking.propertyId, selectedDate)
       .then((res) => {
         if (cancelled) return;
@@ -322,11 +324,17 @@ export default function BookSiteVisit() {
           slots: res?.data || [],
           slotMeta: res?.meta || null,
           slotsLoading: false,
+          slotError: null,
         });
       })
-      .catch(() => {
+      .catch((error) => {
         if (cancelled) return;
-        updateBookingAt(index, { slots: [], slotMeta: null, slotsLoading: false });
+        updateBookingAt(index, {
+          slots: [],
+          slotMeta: null,
+          slotsLoading: false,
+          slotError: error?.message || 'Unable to load time slots.',
+        });
       });
 
     return () => { cancelled = true; };
@@ -350,7 +358,7 @@ export default function BookSiteVisit() {
     let cancelled = false;
     const index = activeIndex;
 
-    updateBookingAt(index, { officersLoading: true, officers: [], officerId: null });
+    updateBookingAt(index, { officersLoading: true, officers: [], officerId: null, officerError: null });
     visitApi.getAvailableOfficers(token, activeBooking.propertyId, activeBooking.slot.slot_start, activeBooking.slotMeta?.branch_id)
       .then((res) => {
         if (cancelled) return;
@@ -358,11 +366,17 @@ export default function BookSiteVisit() {
           officers: res?.data || [],
           officerMeta: res?.meta || null,
           officersLoading: false,
+          officerError: null,
         });
       })
-      .catch(() => {
+      .catch((error) => {
         if (cancelled) return;
-        updateBookingAt(index, { officers: [], officerMeta: null, officersLoading: false });
+        updateBookingAt(index, {
+          officers: [],
+          officerMeta: null,
+          officersLoading: false,
+          officerError: error?.message || 'Unable to load sales officers.',
+        });
       });
 
     return () => { cancelled = true; };
@@ -917,10 +931,12 @@ export default function BookSiteVisit() {
                     ) : (
                       <View className="border border-dashed border-gray-200 rounded-2xl p-5 items-center bg-gray-50 mb-2">
                         <Text className="text-[13px] font-manrope-bold text-[#111827]">
-                          {!booking.propertyId ? "Property unit missing" : "No slots available"}
+                          {!booking.propertyId ? "Property unit missing" : booking.slotError ? "Could not load time slots" : "No slots available"}
                         </Text>
                         <Text className="text-[11px] font-manrope text-[#6B7280] text-center mt-1">
-                          {!booking.propertyId ? "Please reopen the project and add a specific unit to your site visit." : "Try a different date."}
+                          {!booking.propertyId
+                            ? "Please reopen the project and add a specific unit to your site visit."
+                            : booking.slotError || "Try a different date."}
                         </Text>
                       </View>
                     )}
@@ -949,10 +965,12 @@ export default function BookSiteVisit() {
                                 </View>
                                 <View className="flex-1">
                                   <Text className={`text-[13px] font-manrope-bold ${selectedOfficer ? 'text-[#111827]' : 'text-[#9CA3AF]'}`} numberOfLines={1}>
-                                    {selectedOfficer?.name || (booking.officers.length === 0 ? "No officers available" : "Choose sales officer")}
+                                    {selectedOfficer?.name || (booking.officers.length === 0 ? (booking.officerError ? "Could not load officers" : "No officers available") : "Choose sales officer")}
                                   </Text>
                                   <Text className="text-[11px] font-manrope text-[#6B7280] mt-0.5" numberOfLines={1}>
-                                    {selectedOfficer?.isPrevious ? "Previous sales officer" : selectedOfficer?.role || "Required before locking"}
+                                    {selectedOfficer?.isPrevious
+                                      ? "Previous sales officer"
+                                      : booking.officerError || selectedOfficer?.role || "Required before locking"}
                                   </Text>
                                 </View>
                               </View>

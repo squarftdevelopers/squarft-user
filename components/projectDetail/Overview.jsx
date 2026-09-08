@@ -35,7 +35,7 @@ function getImageSource(image, fallback) {
 
 function getVariantPrice(variant) {
     if (variant.priceRange) return variant.priceRange.split(/\u2013|â€“|-/)[0].trim();
-    return formatCompactPrice(variant.price ?? variant.base_price ?? variant.price_from) || "\u2014";
+    return formatCompactPrice(variant.price ?? variant.base_price ?? variant.price_from);
 }
 
 function getVariantArea(variant, project) {
@@ -196,9 +196,11 @@ export default function Overview({ project }) {
                         <View className="p-3">
                             <View className="flex-row items-center justify-between mb-1">
                                 <Text className="text-[13px] font-manrope-bold text-[#0F172A]">{getPropertyTitle(v)}</Text>
-                                <Text className="text-[16px] font-manrope-bold text-[#4A43EC]">
-                                    {getVariantPrice(v)}
-                                </Text>
+                                {getVariantPrice(v) ? (
+                                    <Text className="text-[16px] font-manrope-bold text-[#4A43EC]">
+                                        {getVariantPrice(v)}
+                                    </Text>
+                                ) : null}
                             </View>
                             <View className="flex-row items-center gap-2 mb-5 px-0">
                                 <MaterialCommunityIcons name="floor-plan" size={13} color="#9CA3AF" />

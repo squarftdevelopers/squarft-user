@@ -1,11 +1,11 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Stack, useRootNavigationState } from "expo-router";
+import { Stack, useRootNavigationState, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { useFonts } from "expo-font";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
 import "../global.css";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -25,7 +25,8 @@ import { hydrateAndCleanTrackers } from "../store/slices/projectViewTrackingSlic
 import { hydrateAndCleanRecentTrackers } from "../store/slices/recentProjectsSlice";
 import * as Location from "expo-location";
 import { setCoordinates, setLocationPermission } from "../store/slices/locationSlice";
-import { hydrateAuthThunk } from "../store/slices/authSlice";
+import { hydrateAuthThunk, logoutThunk } from "../store/slices/authSlice";
+import { getJwtExpiryMs, isJwtExpired } from "../utils/tokenExpiry";
 
 if (!globalThis.__SQUARFT_LIVEKIT_GLOBALS_REGISTERED__) {
     registerGlobals();
@@ -50,6 +51,47 @@ function AuthHydrator() {
         }, 300);
         return () => clearTimeout(timer);
     }, [authChecked]);
+
+    return null;
+}
+
+function SessionExpiryGuard() {
+    const dispatch = useDispatch();
+    const router = useRouter();
+    const token = useSelector((state) => state.auth.token);
+    const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
+
+    useEffect(() => {
+        if (!token || !isLoggedIn) return undefined;
+
+        let expiryTimer;
+        let signingOut = false;
+        const signOutIfExpired = () => {
+            if (signingOut || !isJwtExpired(token)) return;
+            signingOut = true;
+            dispatch(logoutThunk()).finally(() => router.replace("/(auth)/login"));
+        };
+
+        const expiresAt = getJwtExpiryMs(token);
+        if (expiresAt !== null) {
+            const delay = expiresAt - Date.now();
+            if (delay <= 0) {
+                signOutIfExpired();
+            } else {
+                // setTimeout cannot schedule values above this limit safely.
+                expiryTimer = setTimeout(signOutIfExpired, Math.min(delay, 2147483647));
+            }
+        }
+
+        const appStateSubscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") signOutIfExpired();
+        });
+
+        return () => {
+            if (expiryTimer) clearTimeout(expiryTimer);
+            appStateSubscription.remove();
+        };
+    }, [dispatch, isLoggedIn, router, token]);
 
     return null;
 }
@@ -136,6 +178,7 @@ export default function RootLayout() {
                 <Provider store={store}>
                     <BottomSheetModalProvider>
                         <AuthHydrator />
+                        <SessionExpiryGuard />
                         <ActivityTrackerHydrator />
                         <AppActivityTracker />
                         <PushNotificationRegistrar />

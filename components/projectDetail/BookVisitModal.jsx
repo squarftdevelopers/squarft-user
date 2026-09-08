@@ -14,12 +14,12 @@ function formatCompactPrice(value) {
 
     if (amount >= 10000000) {
         const crores = amount / 10000000;
-        return `\u20B9${Number.isInteger(crores) ? crores.toFixed(0) : crores.toFixed(1)}Cr`;
+        return `\u20B9${Number.isInteger(crores) ? crores.toFixed(0) : crores.toFixed(1)} Cr`;
     }
 
     if (amount >= 100000) {
         const lakhs = amount / 100000;
-        return `\u20B9${Number.isInteger(lakhs) ? lakhs.toFixed(0) : lakhs.toFixed(1)}L`;
+        return `\u20B9${Number.isInteger(lakhs) ? lakhs.toFixed(0) : lakhs.toFixed(1)} L`;
     }
 
     return `\u20B9${amount.toLocaleString('en-IN')}`;
@@ -30,12 +30,46 @@ function getImageSource(image, fallback) {
     return image || fallback;
 }
 
+function buildVisitOptions(project) {
+    const rawOptions = project?.floorPlans?.length ? project.floorPlans : (project?.variants || []);
+    // A project-panel project has one inventory row per physical unit. Show
+    // each configuration once, rather than exposing every duplicate unit.
+    const configuredOptions = rawOptions.filter((option) => String(option?.configuration || '').trim());
+    const options = configuredOptions.length > 0 ? configuredOptions : rawOptions;
+    const grouped = new Map();
+
+    options.forEach((option) => {
+        const label = getProjectPropertyCardConfig(option) || option.title || option.type || "Property";
+        const key = label.trim().toLowerCase();
+        const existing = grouped.get(key);
+        const linkedPropertyId = option.property_id || option.source_property_id || (!option.configuration ? option.id : null);
+
+        if (!existing) {
+            grouped.set(key, {
+                ...option,
+                title: label,
+                property_id: linkedPropertyId,
+                unitCount: 1,
+            });
+            return;
+        }
+
+        existing.unitCount += 1;
+        // Prefer a representative that is linked to a bookable property.
+        if (!existing.property_id && linkedPropertyId) {
+            existing.property_id = linkedPropertyId;
+        }
+    });
+
+    return [...grouped.values()];
+}
+
 export default function BookVisitModal({ visible, onClose, project }) {
     const insets = useSafeAreaInsets();
     const [selected, setSelected] = useState([]);
     const dispatch = useDispatch();
     const router = useRouter();
-    const visitOptions = project?.floorPlans?.length ? project.floorPlans : (project?.variants || []);
+    const visitOptions = buildVisitOptions(project);
 
     const toggle = (index) => {
         setSelected((prev) =>
@@ -51,7 +85,7 @@ export default function BookVisitModal({ visible, onClose, project }) {
 
         selectedOptions.forEach((option, index) => {
             const variantType = option.type || option.title;
-            const propertyId = option.id;
+            const propertyId = option.property_id || option.source_property_id || option.id;
 
             dispatch(addSiteVisit({
                 id: propertyId || `${project.id}_${timestamp}_${index}`,
@@ -102,7 +136,7 @@ export default function BookVisitModal({ visible, onClose, project }) {
             <View className="flex-row items-start justify-between px-5 mb-2 mt-1">
                 <View className="flex-1 pr-4">
                     <Text className="text-[20px] font-bold text-gray-900">What are you looking for?</Text>
-                    <Text className="text-[13px] text-gray-400 mt-0.5">Select units for your site visit</Text>
+                    <Text className="text-[13px] text-gray-400 mt-0.5">Select property types for your site visit</Text>
                 </View>
                 <TouchableOpacity onPress={onClose} className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center">
                     <Ionicons name="close" size={18} color="#374151" />
@@ -113,7 +147,7 @@ export default function BookVisitModal({ visible, onClose, project }) {
             <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
                 {visitOptions.map((v, i) => {
                     const isSelected = selected.includes(i);
-                    const priceText = v.priceRange || formatCompactPrice(v.price ?? v.base_price ?? v.price_from) || '\u2014';
+                    const priceText = v.priceRange || formatCompactPrice(v.price ?? v.base_price ?? v.price_from);
                     const areaText = v.area || (v.area_sqft ? `${v.area_sqft} SQ.FT.` : (project.areaSqft ? `${project.areaSqft} SQ.FT.` : '\u2014'));
                     return (
                         <TouchableOpacity
@@ -126,9 +160,11 @@ export default function BookVisitModal({ visible, onClose, project }) {
                             </View>
                             <View className="flex-1">
                                 <Text className="text-[14px] font-manrope-bold text-gray-900 mb-0.5">{getProjectPropertyCardConfig(v) || v.title || v.type || "Property"}</Text>
-                                <Text className="text-[13px] font-inter-bold text-indigo-600 mb-0.5">
-                                    {priceText}
-                                </Text>
+                                {priceText ? (
+                                    <Text className="text-[13px] font-inter-bold text-indigo-600 mb-0.5">
+                                        {priceText}
+                                    </Text>
+                                ) : null}
                                 <View className="flex-row items-center gap-1">
                                     <MaterialCommunityIcons name="floor-plan" size={11} color="#9CA3AF" />
                                     <Text className="text-[11px] text-gray-400">{areaText}</Text>
@@ -148,7 +184,7 @@ export default function BookVisitModal({ visible, onClose, project }) {
                     <View className="flex-row items-center gap-2">
                         <View className="w-2 h-2 rounded-full bg-green-500" />
                         <Text className="text-[13px] text-gray-700 font-semibold">
-                            {selected.length} unit{selected.length !== 1 ? "s" : ""} selected
+                            {selected.length} type{selected.length !== 1 ? "s" : ""} selected
                         </Text>
                     </View>
                     {selected.length > 0 && (

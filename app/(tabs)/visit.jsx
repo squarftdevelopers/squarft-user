@@ -11,11 +11,26 @@ import { fetchVisitListThunk } from "../../store/slices/visitSlice";
 import { propertyApi } from "../../services/propertyApi";
 import PropertyDetailModal from "../../components/projectDetail/PropertyDetailModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
+import { formatProjectPriceAmount } from "../../services/projectDisplay";
 import { useRefetchOnForeground } from "../../hooks/useRefetchOnForeground";
 
 const siteVisitBanner = require("../../assets/images/sitevisit_banner.png");
 const TAB_BAR_HEIGHT = Platform.OS === "ios" ? 88 : 82;
 const ACTION_BAR_TAB_MARGIN = 60;
+
+function VisitThumbnail({ source, className }) {
+  if (!source) return <View className={`${className} bg-gray-100`} />;
+  return <Image source={typeof source === 'string' ? { uri: source } : source} className={className} resizeMode="cover" />;
+}
+
+const formatVisitPrice = (visit = {}) => {
+  const rawPrice = visit.price ?? visit.priceINR ?? visit.variants?.[0]?.priceRange;
+  if (rawPrice === null || rawPrice === undefined || rawPrice === '') return '';
+  // Preserve a server-provided range; a single numeric rupee value is
+  // displayed in the same lakh/crore format as project cards.
+  if (typeof rawPrice === 'string' && /[–-]/.test(rawPrice)) return rawPrice;
+  return formatProjectPriceAmount(rawPrice) || String(rawPrice);
+};
 
 const styles = StyleSheet.create({
   tabsOuter: {
@@ -258,8 +273,10 @@ export default function Visit() {
       longitude: v.property_longitude ?? v.longitude,
       city: v.property_city ?? v.city,
       pincode: v.property_pincode ?? v.pincode,
-      image: v.property_image || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
-      imageMain: v.property_image || v.project_cover_image_url || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80",
+      // The backend returns a signed URL for this scheduled property's media.
+      // Do not substitute an unrelated stock/fallback illustration.
+      image: v.property_image || v.project_cover_image_url || null,
+      imageMain: v.property_image || v.project_cover_image_url || null,
       status: normalizeStatus(v.status),
       dateFull: new Date(v.slot_start).toLocaleString('en-US', { 
         month: 'short', 
@@ -488,15 +505,7 @@ export default function Visit() {
                             <View className={`w-[20px] h-[20px] rounded-full border items-center justify-center self-center mr-2.5 ${isSelected ? 'bg-[#4A43EC] border-[#4A43EC]' : 'border-gray-300'}`}>
                               {isSelected && <Feather name="check" size={12} color="white" />}
                             </View>
-                            <Image
-                              source={
-                                visit.image
-                                  ? (typeof visit.image === 'string' ? { uri: visit.image } : visit.image)
-                                  : (typeof visit.imageMain === 'string' ? { uri: visit.imageMain } : visit.imageMain)
-                              }
-                              className="w-[58px] rounded-lg mr-2.5"
-                              resizeMode="cover"
-                            />
+                            <VisitThumbnail source={visit.image || visit.imageMain} className="w-[58px] rounded-lg mr-2.5" />
                             <View className="flex-1 pr-2">
                               <Text className="text-[13px] font-manrope-bold text-gray-900 mb-0.5" numberOfLines={1}>
                                 {getProjectPropertyCardConfig(visit.variantDetails || visit) || visit.variantDetails?.title || visit.variant || typeLabel || visit.title || visit.name || "Property"}
@@ -510,7 +519,7 @@ export default function Visit() {
                                 </Text>
                               ) : null}
                               <Text className="text-[11px] font-manrope-bold text-[#4A43EC] mt-1" numberOfLines={1}>
-                                {visit.price || visit.priceINR || (visit.variants && visit.variants[0]?.priceRange)}
+                                {formatVisitPrice(visit)}
                               </Text>
                             </View>
                           </Pressable>
@@ -574,11 +583,7 @@ export default function Visit() {
                 <View key={visit.id} className="mx-3 mt-2.5 bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
                   <View className="p-3">
                     <View className="flex-row mb-2.5">
-                      <Image
-                        source={typeof visit.image === 'string' ? { uri: visit.image } : visit.image}
-                        className="w-14 h-14 rounded-lg mr-2.5"
-                        resizeMode="cover"
-                      />
+                      <VisitThumbnail source={visit.image || visit.imageMain} className="w-14 h-14 rounded-lg mr-2.5" />
                       <View className="flex-1 justify-center">
                         <View className={`${visit.status === "CANCELLED" ? "bg-[#FEE2E2]" : "bg-[#EEECFF]"} self-start px-2 py-0.5 rounded-md mb-1.5`}>
                           <Text className={`${visit.status === "CANCELLED" ? "text-[#DC2626]" : "text-[#4A43EC]"} text-[8px] font-manrope-bold tracking-wider uppercase`}>
@@ -690,11 +695,7 @@ export default function Visit() {
                   <View key={visit.id} className="mx-3 mt-2.5 bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
                     <View className="p-3">
                       <View className="flex-row mb-2.5">
-                        <Image
-                          source={typeof visit.image === 'string' ? { uri: visit.image } : visit.image}
-                          className="w-14 h-14 rounded-lg mr-2.5"
-                          resizeMode="cover"
-                        />
+                        <VisitThumbnail source={visit.image || visit.imageMain} className="w-14 h-14 rounded-lg mr-2.5" />
                         <View className="flex-1 justify-center">
                           <View className={`self-start px-2 py-0.5 rounded-md mb-1.5 ${statusBadgeClass}`}>
                             <Text className={`text-[8px] font-manrope-bold tracking-wider uppercase ${statusTextClass}`}>

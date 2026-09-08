@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isJwtExpired } from "./tokenExpiry";
 
 const AUTH_SESSION_KEY = "@squarft/auth_session";
 
@@ -19,6 +20,13 @@ export async function loadAuthSession() {
 
     const session = JSON.parse(raw);
     if (!session?.token) return null;
+
+    // Never restore a token that has already expired. This prevents an app
+    // relaunch from briefly showing authenticated screens and firing 401s.
+    if (isJwtExpired(session.token)) {
+      await clearAuthSession();
+      return null;
+    }
 
     return session;
   } catch (error) {
