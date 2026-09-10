@@ -1,10 +1,11 @@
+import { visitDisplayStatus, isVisitInHistory } from "../../services/visitStatus";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { View, Text, Pressable, ScrollView, Image, ActivityIndicator, StyleSheet, Alert, Linking, Platform, RefreshControl } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import * as Location from "expo-location";
 import RescheduleBottomSheet from "../../components/visit/RescheduleBottomSheet";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useSelector, useDispatch } from "react-redux";
 import { addSiteVisit, removeSiteVisit } from "../../store/slices/propertiesSlice";
 import { fetchVisitListThunk } from "../../store/slices/visitSlice";
@@ -72,11 +73,6 @@ const getVisitTimestamp = (visit) => {
   const value = visit.slot_start || visit.isoDate;
   const timestamp = new Date(value).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
-};
-
-const normalizeStatus = (status) => {
-  if (status === 'pending_confirmation') return 'PENDING';
-  return String(status || '').toUpperCase();
 };
 
 const getVisitTimeLabel = (visit) => {
@@ -231,9 +227,11 @@ export default function Visit() {
     }
   }, [refreshVisits]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     refreshVisits();
-  }, [refreshVisits]);
+    const timer = setInterval(refreshVisits, 15000);
+    return () => clearInterval(timer);
+  }, [refreshVisits]));
 
   useRefetchOnForeground(refreshVisits);
 
@@ -277,7 +275,8 @@ export default function Visit() {
       // Do not substitute an unrelated stock/fallback illustration.
       image: v.property_image || v.project_cover_image_url || null,
       imageMain: v.property_image || v.project_cover_image_url || null,
-      status: normalizeStatus(v.status),
+      status: visitDisplayStatus(v),
+      cancellationReason: v.cancellation_reason || '',
       dateFull: new Date(v.slot_start).toLocaleString('en-US', { 
         month: 'short', 
         day: 'numeric', 
@@ -305,12 +304,12 @@ export default function Visit() {
 
   // Filter and sort for upcoming
   const upcomingVisits = allCombinedVisits
-    .filter((v) => getVisitTimestamp(v) >= currentVisitTime)
+    .filter((v) => !isVisitInHistory(v.status, getVisitTimestamp(v), currentVisitTime))
     .sort((a, b) => getVisitTimestamp(a) - getVisitTimestamp(b));
 
   // Filter and sort for past
   const pastVisits = allCombinedVisits
-    .filter((v) => getVisitTimestamp(v) < currentVisitTime)
+    .filter((v) => isVisitInHistory(v.status, getVisitTimestamp(v), currentVisitTime))
     .sort((a, b) => getVisitTimestamp(b) - getVisitTimestamp(a));
 
   const bottomSheetModalRef = useRef(null);
@@ -728,13 +727,16 @@ export default function Visit() {
 
                       <View className="mb-2.5 bg-gray-50 p-2 rounded-lg">
                         <Text className="text-[9px] text-[#9CA3AF] font-manrope-bold tracking-wider uppercase mb-1">
-                          VISITED ON
+                          {isCompleted ? "VISITED ON" : "SCHEDULED FOR"}
                         </Text>
                         <Text className="text-[11px] font-manrope-bold text-gray-700">
                           {new Date(visit.isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • {getVisitTimeLabel(visit)}
                         </Text>
                       </View>
 
+                      {visit.cancellationReason ? (
+                        <Text className="text-[11px] text-gray-600 mb-2.5">Reason: {visit.cancellationReason}</Text>
+                      ) : null}
                       {isCompleted ? (
                         <View className="flex-col gap-2">
                           <Pressable
