@@ -16,7 +16,8 @@
         "NSMicrophoneUsageDescription": "Allow SquarFT to use your microphone for AI voice and video calls.",
         "NSLocationWhenInUseUsageDescription": "Allow SquarFT to use your location to show nearby projects.",
         "NSFaceIDUsageDescription": "Allow SquarFT to use Face ID to unlock the app."
-      }
+      },
+      "bitcode": false
     },
     "android": {
       "googleServicesFile": "./app/google-services.json",
@@ -48,11 +49,23 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
       ],
       "config": {
         "googleMaps": {
-          "apiKey": ""
+          "apiKey": "AIzaSyDiYnY4FG1juihWvHEgM-NSz2aEKUsKing"
         }
       }
     },
@@ -135,7 +148,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/d20cc294-6ce2-4113-863b-c2fa6eeb07b9"
+      "url": "https://u.expo.dev/fc42ac04-0e6f-4adc-8835-ceb9e73674ba"
     }
   }
 }
