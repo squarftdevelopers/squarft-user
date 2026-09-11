@@ -138,4 +138,26 @@ export const profileApi = {
       throw error;
     }
   },
+
+  deleteAccount: async (token) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/profile/me`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete account');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ Error deleting account:', error);
+      throw error;
+    }
+  },
 };

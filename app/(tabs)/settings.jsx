@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { router, useFocusEffect } from "expo-router";
 import { logoutThunk, fetchProfileThunk, updateProfilePictureThunk } from "../../store/slices/authSlice";
+import { profileApi } from "../../services/profileApi";
 import { getProfileDisplay } from "../../services/profileDisplay";
 import { AI_BASE_URL } from "../../services/config";
 import { ProfileSkeleton } from "../../components/SkeletonLoader";
@@ -93,6 +94,7 @@ function SettingsRow({ icon, iconBg, label, sublabel, sublabelColor, right, onPr
 export default function Settings() {
     const dispatch = useDispatch();
     const [loggingOut, setLoggingOut] = useState(false);
+    const [deletingAccount, setDeletingAccount] = useState(false);
     const [biometricLockOn, setBiometricLockOn] = useState(false);
     const [biometricLabel, setBiometricLabel] = useState("Biometric Lock");
     const [biometricBusy, setBiometricBusy] = useState(false);
@@ -173,6 +175,34 @@ export default function Settings() {
                 },
             },
         ]);
+    };
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setDeletingAccount(true);
+                        try {
+                            if (token) {
+                                await profileApi.deleteAccount(token);
+                            }
+                            await dispatch(logoutThunk()).unwrap();
+                            router.replace('/(auth)/login');
+                        } catch (error) {
+                            Alert.alert('Delete failed', typeof error === 'string' ? error : error?.message || 'Please try again.');
+                        } finally {
+                            setDeletingAccount(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const handleProfilePicturePick = async () => {
@@ -386,7 +416,22 @@ export default function Settings() {
                     <SettingsRow
                         icon={<MaterialCommunityIcons name="email-outline" size={18} color="#475569" />}
                         label="Contact Us"
-                        onPress={() => router.push("/(screens)/contact-us")}
+                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Contact Us" } })}
+                    />
+                    <SettingsRow
+                        icon={<Ionicons name="document-text-outline" size={18} color="#475569" />}
+                        label="Terms & Conditions"
+                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Terms & Conditions" } })}
+                    />
+                    <SettingsRow
+                        icon={<Ionicons name="shield-checkmark-outline" size={18} color="#475569" />}
+                        label="Privacy Policy"
+                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Privacy Policy" } })}
+                    />
+                    <SettingsRow
+                        icon={<Ionicons name="help-circle-outline" size={18} color="#475569" />}
+                        label="FAQs"
+                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "FAQs" } })}
                         isLast
                     />
                 </SettingsCard>
@@ -395,7 +440,7 @@ export default function Settings() {
                 <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={handleLogout}
-                    disabled={loggingOut}
+                    disabled={loggingOut || deletingAccount}
                     style={{
                         marginHorizontal: 16, marginTop: 28,
                         backgroundColor: '#1A1A1A',
@@ -405,6 +450,29 @@ export default function Settings() {
                 >
                     <MaterialCommunityIcons name="logout" size={20} color="#fff" />
                     <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>{loggingOut ? "Logging out…" : "Logout"}</Text>
+                </TouchableOpacity>
+
+                {/* Delete Account */}
+                <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={handleDeleteAccount}
+                    disabled={loggingOut || deletingAccount}
+                    style={{
+                        marginHorizontal: 16, marginTop: 12, marginBottom: 24,
+                        backgroundColor: '#FEF2F2',
+                        borderWidth: 1, borderColor: '#FEE2E2',
+                        borderRadius: 16, paddingVertical: 15,
+                        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}
+                >
+                    {deletingAccount ? (
+                        <ActivityIndicator size="small" color="#DC2626" />
+                    ) : (
+                        <>
+                            <Ionicons name="trash-outline" size={19} color="#DC2626" />
+                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#DC2626' }}>Delete Account</Text>
+                        </>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
         </View>

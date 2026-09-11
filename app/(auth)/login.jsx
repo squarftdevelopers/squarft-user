@@ -78,6 +78,25 @@ export default function Login() {
                             }
                         </TouchableOpacity>
 
+                        <View className="items-center justify-center pt-2 pb-4">
+                            <Text className="text-center text-xs text-gray-400 font-lato leading-5">
+                                By continuing, you agree to our{"\n"}
+                                <Text
+                                    onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Terms & Conditions" } })}
+                                    className="font-bold text-[#4A43EC]"
+                                >
+                                    Terms & Conditions
+                                </Text>
+                                {" "}and{" "}
+                                <Text
+                                    onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Privacy Policy" } })}
+                                    className="font-bold text-[#4A43EC]"
+                                >
+                                    Privacy Policy
+                                </Text>
+                            </Text>
+                        </View>
+
                     </ScrollView>
                 </View>
             </TouchableWithoutFeedback>
