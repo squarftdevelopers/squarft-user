@@ -9,7 +9,6 @@ export default function Auth() {
             <Stack.Screen name="onboarding4" options={{ headerTitle: "Onboarding 4" }} />
             <Stack.Screen name="complete-login" options={{ headerTitle: "Complete Login" }} />
             <Stack.Screen name="login" options={{ headerTitle: "Login" }} />
-            <Stack.Screen name="forgot-password" options={{ headerTitle: "Forgot Password" }} />
             <Stack.Screen name="otp-verification" options={{ headerTitle: "OTP Verification" }} />
         </Stack>
     );

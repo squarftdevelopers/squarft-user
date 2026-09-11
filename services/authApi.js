@@ -63,12 +63,6 @@ export const authApi = {
             body: JSON.stringify({ otp_token, otp }),
         }),
 
-    resetPassword: (verified_token, new_password) =>
-        request('/auth/reset-password', {
-            method: 'POST',
-            body: JSON.stringify({ verified_token, new_password }),
-        }),
-
     googleLogin: (idToken) =>
         request('/auth/google', {
             method: 'POST',

@@ -60,15 +60,6 @@ export const verifyOtpThunk = createAsyncThunk('auth/verifyOtp', async ({ otp_to
     }
 });
 
-// Reset password
-export const resetPasswordThunk = createAsyncThunk('auth/resetPassword', async ({ verified_token, new_password }, { rejectWithValue }) => {
-    try {
-        return await authApi.resetPassword(verified_token, new_password);
-    } catch (e) {
-        return rejectWithValue(e.message);
-    }
-});
-
 // Fetch user profile
 export const fetchProfileThunk = createAsyncThunk('auth/fetchProfile', async (_, { getState, rejectWithValue }) => {
     try {
@@ -248,16 +239,6 @@ const authSlice = createSlice({
                 state.verifiedToken = action.payload.verified_token;
             })
             .addCase(verifyOtpThunk.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            })
-            // Reset Password
-            .addCase(resetPasswordThunk.pending, (state) => { state.loading = true; state.error = null; })
-            .addCase(resetPasswordThunk.fulfilled, (state) => {
-                state.loading = false;
-                state.verifiedToken = null;
-            })
-            .addCase(resetPasswordThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })

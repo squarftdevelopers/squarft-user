@@ -67,12 +67,6 @@ export default function OtpVerification() {
 
         const verifiedToken = result.payload.verified_token;
 
-        if (otpFlow === 'reset_password') {
-            dispatch(clearOtp());
-            router.push("/change-password");
-            return;
-        }
-
         if (otpFlow === 'login') {
             const loginResult = await dispatch(loginThunk({ verified_token: verifiedToken }));
             if (loginThunk.fulfilled.match(loginResult)) {

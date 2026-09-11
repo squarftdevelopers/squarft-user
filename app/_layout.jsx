@@ -2,7 +2,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack, useRootNavigationState, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { useFonts } from "expo-font";
 import { AppState, Platform } from "react-native";
@@ -27,6 +27,7 @@ import * as Location from "expo-location";
 import { setCoordinates, setLocationPermission } from "../store/slices/locationSlice";
 import { hydrateAuthThunk, logoutThunk } from "../store/slices/authSlice";
 import { getJwtExpiryMs, isJwtExpired } from "../utils/tokenExpiry";
+import AnimatedSplashScreen from "../components/AnimatedSplashScreen";
 
 if (!globalThis.__SQUARFT_LIVEKIT_GLOBALS_REGISTERED__) {
     registerGlobals();
@@ -136,6 +137,7 @@ function ActivityTrackerHydrator() {
 
 export default function RootLayout() {
     const rootNavigationState = useRootNavigationState();
+    const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
     const [fontsLoaded] = useFonts({
         ...FontAwesome.font,
@@ -191,6 +193,9 @@ export default function RootLayout() {
                                 <Stack.Screen name="(screens)" options={{ headerShown: false }} />
                             </Stack>
                         </BiometricLockGate>
+                        {showAnimatedSplash && (
+                            <AnimatedSplashScreen onFinish={() => setShowAnimatedSplash(false)} />
+                        )}
                     </BottomSheetModalProvider>
                 </Provider>
             </SafeAreaProvider>
