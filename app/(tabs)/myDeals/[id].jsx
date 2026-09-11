@@ -11,7 +11,7 @@ import TabPayments from "../../../components/myDeals/TabPayments";
 import TabDocuments from "../../../components/myDeals/TabDocuments";
 import TabOverview from "../../../components/myDeals/TabOverview";
 
-const TABS = ["Timeline", "Payments", "Documents", "Overview"];
+const TABS = ["Deal Created", "Meetings & Notes", "Token", "Payment Schedule", "Payment History", "Documents", "Timeline"];
 
 const formatValue = (val) => {
     const num = Number(val);
@@ -71,7 +71,7 @@ const DetailSkeleton = () => (
 
 export default function DealDetails() {
     const { id } = useLocalSearchParams();
-    const [activeTab, setActiveTab] = useState("Timeline");
+    const [activeTab, setActiveTab] = useState("Deal Created");
     const dispatch = useDispatch();
     const { currentDeal: deal, currentDealLoading: loading, currentDealError: error } = useSelector((s) => s.deals);
 
@@ -90,16 +90,19 @@ export default function DealDetails() {
             : <DetailSkeleton />;
     }
 
-    const totalStages = deal.selling_broker_id ? 4 : (deal.timeline?.length || 8);
+    const totalStages = deal.deal_stages?.length || 7;
     const paidPct = deal.status === 'closed' ? 100 : Math.min(99, Math.round(((deal.current_stage_index ?? 0) / totalStages) * 100));
     const uploadDealId = deal.apiDealId || deal.deal_id || deal.dealId || deal.id || id;
 
     const activeTabContent = (() => {
         switch (activeTab) {
-            case "Timeline": return <TabTimeline timeline={deal.timeline ?? []} currentStageIndex={deal.current_stage_index ?? 0} />;
-            case "Payments": return <TabPayments payments={deal.payments ?? []} />;
+            case "Deal Created": return <TabOverview deal={deal} />;
+            case "Meetings & Notes": return <TabTimeline timeline={(deal.timeline ?? []).filter((item) => /meeting|note/i.test(`${item.title || ''} ${item.details || ''}`))} currentStageIndex={0} />;
+            case "Token": return <TabPayments payments={(deal.payments ?? []).filter((payment) => payment.is_token || /token/i.test(payment.title || payment.milestone || ''))} />;
+            case "Payment Schedule": return <TabPayments payments={deal.payments ?? []} />;
+            case "Payment History": return <TabPayments payments={(deal.payments ?? []).filter((payment) => ['paid', 'completed', 'partial'].includes(String(payment.status).toLowerCase()))} />;
             case "Documents": return <TabDocuments documents={deal.documents ?? []} dealId={uploadDealId} />;
-            default: return <TabOverview deal={deal} />;
+            default: return <TabTimeline timeline={deal.timeline ?? []} currentStageIndex={deal.current_stage_index ?? 0} />;
         }
     })();
 
@@ -159,14 +162,19 @@ export default function DealDetails() {
 
                 {/* Tabs */}
                 <View className="bg-white">
-                    <View className="flex-row items-center justify-between px-5 pt-4 pb-0 border-b border-[#F3F4F6]">
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16 }}
+                        className="border-b border-[#F3F4F6]"
+                    >
                         {TABS.map((tab) => {
                             const isActive = tab === activeTab;
                             return (
                                 <Pressable
                                     key={`main-tab-${tab}`}
                                     onPress={() => setActiveTab(tab)}
-                                    className={`pb-3 ${isActive ? "border-b-[3px] border-[#4F48ED]" : "border-b-[3px] border-transparent"}`}
+                                    className={`mr-6 shrink-0 pb-3 ${isActive ? "border-b-[3px] border-[#4F48ED]" : "border-b-[3px] border-transparent"}`}
                                 >
                                     <Text className={`text-[13px] ${isActive ? "font-manrope-bold text-[#4F48ED]" : "font-manrope-medium text-[#9CA3AF]"}`}>
                                         {tab}
@@ -174,7 +182,7 @@ export default function DealDetails() {
                                 </Pressable>
                             );
                         })}
-                    </View>
+                    </ScrollView>
 
                     <View className="px-5 pt-6 pb-[140px]">
                         {activeTabContent}
