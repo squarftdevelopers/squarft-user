@@ -8,6 +8,7 @@ import { allProjects } from "../../data/projects";
 import DetailFooter from "./DetailFooter";
 import ReraStatusBadge, { isReraApproved } from "../ReraStatusBadge";
 import SimpleBottomSheet from "../SimpleBottomSheet";
+import EmptyPropertySection from "../EmptyPropertySection";
 
 const POSSESSION_FILTERS = ["All", "In 3 yrs", "Ready To Move", "Under Construction"];
 
@@ -324,10 +325,13 @@ export default function BuilderModal({ visible, onClose, project }) {
                             <Text className="text-[14px] font-manrope-semibold text-gray-400 mt-3">Loading projects...</Text>
                         </View>
                     ) : filteredProjects.length === 0 ? (
-                        <View className="items-center py-10">
-                            <Text className="text-[14px] font-manrope-semibold text-gray-400 mt-3">No projects found</Text>
-                            <Text className="text-[12px] text-gray-300 mt-1">No {activeFilter} projects by this builder</Text>
-                        </View>
+                        <EmptyPropertySection
+                            variant="compact"
+                            icon="office-building-outline"
+                            title="No Projects Found"
+                            description={`No ${activeFilter !== "All" ? activeFilter.toLowerCase() + " " : ""}projects found for this developer.`}
+                            style={{ marginVertical: 12 }}
+                        />
                     ) : (
                         filteredProjects.map((p) => {
                             const priceText = getPriceText(p);

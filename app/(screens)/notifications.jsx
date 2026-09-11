@@ -74,7 +74,15 @@ export default function Notifications() {
         </View>
       ) : (
         <ScrollView
-          refreshControl={<RefreshControl refreshing={loading && page === 1} onRefresh={() => dispatch(fetchNotificationsThunk(1))} />}
+          alwaysBounceVertical={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading && page === 1}
+              onRefresh={() => dispatch(fetchNotificationsThunk(1))}
+              colors={["#4A43EC"]}
+              tintColor="#4A43EC"
+            />
+          }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 100 }}
         >

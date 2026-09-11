@@ -37,6 +37,7 @@ import { RecommendedProjectsSkeleton, FeaturedProjectsSkeleton, ProjectInFocusSk
 import { buildProjectAddress, buildProjectPrice } from "../../services/projectDisplay";
 import { useRefetchOnForeground } from "../../hooks/useRefetchOnForeground";
 import { applyProjectFilters, hasActiveProjectFilters } from "../../services/projectFilters";
+import EmptyPropertySection from "../../components/EmptyPropertySection";
 
 const CATEGORIES = [
   { id: "1", label: "Plot", image: require("../../assets/images/plot.png"), type: "Plot" },
@@ -424,6 +425,7 @@ export default function Home() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 150 }}
+        alwaysBounceVertical={true}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
       >
         {/* Header */}
@@ -596,21 +598,7 @@ export default function Home() {
         </View>
 
         {/* Recommended Properties */}
-        <View style={{ position: "relative" }}>
-          <Image
-            source={require("../../assets/images/Ellipse 70 (2).png")}
-            pointerEvents="none"
-            style={{
-              position: "absolute",
-              left: 103,
-              top: 20,
-              width: 344,
-              height: 287,
-              opacity: 0.98,
-              transform: [{ rotate: "180deg" }],
-            }}
-            resizeMode="contain"
-          />
+        <View>
           <View className="flex-row justify-between items-center px-4 mt-2 mb-3">
             <Text className="text-[15px] font-manrope-extrabold text-gray-900">
               Recommended Projects
@@ -663,27 +651,16 @@ export default function Home() {
               }}
             />
           ) : (
-            <View className="px-5 py-4">
-              <Text className="text-[13px] text-gray-500">No recommended projects available right now.</Text>
-            </View>
+            <EmptyPropertySection
+              icon="home-search-outline"
+              title="No Recommended Projects"
+              description="Personalized recommendations will appear here."
+            />
           )}
         </View>
 
         {/* Featured Projects */}
-        <View style={{ position: "relative" }}>
-          <Image
-            source={require("../../assets/images/Ellipse 70 (2).png")}
-            pointerEvents="none"
-            style={{
-              position: "absolute",
-              left: 103,
-              top: 20,
-              width: 344,
-              height: 287,
-              opacity: 0.58,
-            }}
-            resizeMode="contain"
-          />
+        <View>
           <View className="flex-row justify-between items-center px-5 mt-3 mb-4">
             <Text className="text-[15px] font-manrope-extrabold text-gray-900">Featured Projects</Text>
             <TouchableOpacity onPress={() => router.push({ pathname: "/(screens)/property-listing", params: { featured: "1" } })}>
@@ -702,9 +679,11 @@ export default function Home() {
               renderItem={({ item }) => <FeaturedCard item={item} onToggleFav={handleToggleFav} />}
             />
           ) : (
-            <View className="px-5 py-4">
-              <Text className="text-[13px] text-gray-500">No featured projects available right now.</Text>
-            </View>
+            <EmptyPropertySection
+              icon="star-four-points-outline"
+              title="No Featured Projects"
+              description="Curated featured projects will appear here."
+            />
           )}
         </View>
 
@@ -774,9 +753,13 @@ export default function Home() {
             );
           })
         ) : (
-          <View className="px-6 py-2">
-            <Text className="text-[13px] text-gray-500">No projects in focus available right now.</Text>
-          </View>
+          <EmptyPropertySection
+            icon="shield-home-outline"
+            title="No Projects in Focus Right Now"
+            description="Handpicked spotlight properties from certified builders will appear here."
+            actionText="View All Properties"
+            onAction={() => router.push("/(screens)/property-listing")}
+          />
         )}
 
         {/* High Growth Localities */}
@@ -840,9 +823,13 @@ export default function Home() {
             );
           })
         ) : (
-          <View className="px-5 py-4">
-            <Text className="text-[13px] text-gray-500">No high growth projects available right now.</Text>
-          </View>
+          <EmptyPropertySection
+            icon="chart-line-variant"
+            title="No High-Growth Projects Available"
+            description="Upcoming high-appreciation corridors are being mapped for this location."
+            actionText="Find Nearby"
+            onAction={() => router.push({ pathname: "/(screens)/property-listing", params: { nearby: "1" } })}
+          />
         )}
 
         {/* Like the app? Share the app */}

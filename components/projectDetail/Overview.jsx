@@ -3,9 +3,9 @@ import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import BuilderModal from "./BuilderModal";
-
 import PropertyDetailModal from "./PropertyDetailModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
+import EmptyPropertySection from "../EmptyPropertySection";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.55;
@@ -17,15 +17,15 @@ function formatCompactPrice(value) {
 
     if (amount >= 10000000) {
         const crores = amount / 10000000;
-        return `\u20B9${Number.isInteger(crores) ? crores.toFixed(0) : crores.toFixed(1)}Cr`;
+        return `₹${Number.isInteger(crores) ? crores.toFixed(0) : crores.toFixed(1)}Cr`;
     }
 
     if (amount >= 100000) {
         const lakhs = amount / 100000;
-        return `\u20B9${Number.isInteger(lakhs) ? lakhs.toFixed(0) : lakhs.toFixed(1)}L`;
+        return `₹${Number.isInteger(lakhs) ? lakhs.toFixed(0) : lakhs.toFixed(1)}L`;
     }
 
-    return `\u20B9${amount.toLocaleString('en-IN')}`;
+    return `₹${amount.toLocaleString('en-IN')}`;
 }
 
 function getImageSource(image, fallback) {
@@ -34,12 +34,12 @@ function getImageSource(image, fallback) {
 }
 
 function getVariantPrice(variant) {
-    if (variant.priceRange) return variant.priceRange.split(/\u2013|â€“|-/)[0].trim();
+    if (variant.priceRange) return variant.priceRange.split(/\u2013|–|-/)[0].trim();
     return formatCompactPrice(variant.price ?? variant.base_price ?? variant.price_from);
 }
 
 function getVariantArea(variant, project) {
-    return variant.area || (variant.area_sqft ? `${variant.area_sqft} sqft` : null) || (project.areaSqft ? `${project.areaSqft} sqft` : "\u2014");
+    return variant.area || (variant.area_sqft ? `${variant.area_sqft} sqft` : null) || (project.areaSqft ? `${project.areaSqft} sqft` : "—");
 }
 
 function getPropertyTitle(item) {
@@ -67,7 +67,7 @@ function getPropertyPriceText(item) {
     const from = formatCompactPrice(min);
     const to = formatCompactPrice(max);
 
-    if (from && to && String(min) !== String(max)) return `${from} \u2013 ${to}`;
+    if (from && to && String(min) !== String(max)) return `${from} – ${to}`;
     return from || to || "Price on request";
 }
 
@@ -99,8 +99,6 @@ function getBrochureLabel(brochure) {
     return brochure.label || brochure.name || "Project Brochure";
 }
 
-
-
 const cardShadow = {
     shadowColor: "#6B7280",
     shadowOffset: { width: 0, height: 1 },
@@ -109,14 +107,15 @@ const cardShadow = {
     elevation: 1,
 };
 
-function EmptySection({ label, width: emptyWidth = 260 }) {
+function EmptySection({ icon = "home-search-outline", title, label, description, width: emptyWidth = 260 }) {
     return (
-        <View
-            className="bg-white rounded-2xl px-4 py-5 border border-gray-100"
-            style={{ width: emptyWidth, ...cardShadow }}
-        >
-            <Text className="text-[13px] font-manrope-semibold text-gray-500">{label}</Text>
-        </View>
+        <EmptyPropertySection
+            variant="carousel"
+            icon={icon}
+            title={title || label}
+            description={description}
+            width={emptyWidth}
+        />
     );
 }
 
@@ -219,7 +218,12 @@ export default function Overview({ project }) {
                     </View>
                 ))}
                 {(project.variants || project.floorPlans || []).length === 0 && (
-                    <EmptySection label="Unit configurations are not available for this project yet." width={280} />
+                    <EmptySection
+                        icon="floor-plan"
+                        title="Configurations In Progress"
+                        description="Unit configurations and layouts are being finalized."
+                        width={280}
+                    />
                 )}
             </ScrollView>
 
@@ -331,7 +335,12 @@ export default function Overview({ project }) {
                 >
                     {resaleItems.length > 0
                         ? resaleItems.map((item) => renderPropertyCard(item, { width: 220, imageHeight: 138 }))
-                        : <EmptySection label="No resale properties listed for this project yet." width={260} />}
+                        : <EmptySection
+                            icon="home-switch-outline"
+                            title="No Resale Units Listed"
+                            description="No resale units currently available in this project."
+                            width={260}
+                          />}
                 </ScrollView>
             </ImageBackground>
 
@@ -343,7 +352,12 @@ export default function Overview({ project }) {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 15 }}>
                     {recommendedItems.length > 0
                         ? recommendedItems.map((item) => renderPropertyCard(item, { width: 200 }))
-                        : <EmptySection label="No recommended properties available yet." width={260} />}
+                        : <EmptySection
+                            icon="home-heart-outline"
+                            title="No Recommendations"
+                            description="Curated verified properties will appear here."
+                            width={260}
+                          />}
                 </ScrollView>
             </View>
 
@@ -355,7 +369,12 @@ export default function Overview({ project }) {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 15 }}>
                     {similarApiItems.length > 0
                         ? similarApiItems.map((item) => renderPropertyCard(item, { width: 180 }))
-                        : <EmptySection label="No similar properties available yet." width={240} />}
+                        : <EmptySection
+                            icon="city-variant-outline"
+                            title="No Similar Properties"
+                            description="No matching projects found in this vicinity."
+                            width={260}
+                          />}
                 </ScrollView>
             </View>
         </View>

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, StyleSheet, Animated } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, Animated, RefreshControl } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { LinearGradient } from "expo-linear-gradient";
@@ -72,6 +72,7 @@ const DetailSkeleton = () => (
 export default function DealDetails() {
     const { id } = useLocalSearchParams();
     const [activeTab, setActiveTab] = useState("Deal Created");
+    const [refreshing, setRefreshing] = useState(false);
     const dispatch = useDispatch();
     const { currentDeal: deal, currentDealLoading: loading, currentDealError: error } = useSelector((s) => s.deals);
 
@@ -79,6 +80,15 @@ export default function DealDetails() {
         dispatch(fetchDealById(id));
         return () => dispatch(clearCurrentDeal());
     }, [dispatch, id]);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await dispatch(fetchDealById(id));
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     if (loading || !deal) {
         return error
@@ -108,8 +118,18 @@ export default function DealDetails() {
 
     return (
         <View className="flex-1 bg-white">
-            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-                <Pressable onPress={() => dispatch(fetchDealById(id))} style={{padding:16}}><Text>Refresh deal status</Text></Pressable>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                alwaysBounceVertical={true}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={["#4A43EC"]}
+                        tintColor="#4A43EC"
+                    />
+                }
+            >
                 {!!deal.selling_broker_id && <View style={{paddingHorizontal:20,paddingBottom:12}}><Text style={{fontWeight:'700'}}>Broker-assisted purchase</Text><Text>{['Deal in process','Documentation','Payment schedule','Completion requested'][deal.current_stage_index ?? 0]} · {deal.status === 'closed' ? 'Completed' : 'Updates and payments are reviewed by admin'}</Text></View>}
                 {/* Header */}
                 <View className="pt-[50px] pb-4 px-5 relative">

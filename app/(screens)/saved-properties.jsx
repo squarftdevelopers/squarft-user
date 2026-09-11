@@ -1,5 +1,5 @@
-import React, { useCallback, useRef } from "react";
-import { View, Text, Pressable, ScrollView, Image } from "react-native";
+import React, { useCallback, useRef, useState } from "react";
+import { View, Text, Pressable, ScrollView, Image, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSelector, useDispatch } from "react-redux";
 import { router, useFocusEffect } from "expo-router";
@@ -21,6 +21,7 @@ import {
 export default function SavedProperties() {
   const dispatch = useDispatch();
   const navigatingRef = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { savedProperties, loading, error } = useSelector((state) => state.properties);
   const { list: projectList } = useSelector((state) => state.project);
   const { isLoggedIn, token } = useSelector((state) => state.auth);
@@ -31,6 +32,19 @@ export default function SavedProperties() {
       dispatch(fetchProjectListThunk());
     }
   }, [isLoggedIn, token, dispatch]));
+
+  const onRefresh = useCallback(async () => {
+    if (!isLoggedIn || !token) return;
+    setRefreshing(true);
+    try {
+      await Promise.allSettled([
+        dispatch(fetchSavedPropertiesThunk()),
+        dispatch(fetchProjectListThunk()),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [isLoggedIn, token, dispatch]);
 
   return (
     <View className="flex-1 bg-white">
@@ -56,6 +70,15 @@ export default function SavedProperties() {
         className="flex-1" 
         contentContainerStyle={{ paddingBottom: 100 }} 
         showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#4A43EC"]}
+            tintColor="#4A43EC"
+          />
+        }
       >
         <View className="px-4 pt-4">
           {loading ? (

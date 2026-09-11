@@ -294,6 +294,7 @@ export default function Settings() {
                 }}
             />
             <ScrollView
+                alwaysBounceVertical={true}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 210 }}

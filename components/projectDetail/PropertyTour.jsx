@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
 import { propertyApi } from "../../services/propertyApi";
 import { Shimmer } from "../SkeletonLoader";
+import EmptyPropertySection from "../EmptyPropertySection";
 
 const PERIODS = ["1Y", "3Y", "5Y"];
 
@@ -377,9 +378,13 @@ export default function PropertyTour({ project }) {
                         </View>
                     ))
                 ) : (
-                    <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 13, color: '#9CA3AF' }}>No recommended projects available</Text>
-                    </View>
+                    <EmptyPropertySection
+                        icon="compass-outline"
+                        title="No Recommended Projects"
+                        description="Market insights and price trends will update as new listings go live."
+                        variant="compact"
+                        style={{ marginHorizontal: 4, marginVertical: 8 }}
+                    />
                 )}
             </View>
 

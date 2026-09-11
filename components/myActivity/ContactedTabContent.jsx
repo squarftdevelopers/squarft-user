@@ -74,6 +74,7 @@ const ContactedTabContent = ({ refreshing = false, onRefresh }) => {
       className="flex-1 bg-white"
       contentContainerStyle={{ paddingBottom: 150 }}
       showsVerticalScrollIndicator={false}
+      alwaysBounceVertical={true}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
     >
       <StatusBar style="dark" />

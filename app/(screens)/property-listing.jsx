@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Modal, Pressable, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Modal, Pressable, ScrollView, RefreshControl } from "react-native";
 import { useState, useEffect } from "react"; 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, FontAwesome, AntDesign } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import BHKFilterModal from "../../components/BHKFilterModal";
 import PossessionFilterModal from "../../components/PossessionFilterModal";
 import { openBudgetFilter, setSearchQuery, clearNonTypeFilters, clearPropertyTypes, openFilter, clearFilters } from "../../store/slices/filterSlice";
 import { fetchFeaturedProjectsThunk, fetchNearbyProjectsThunk, fetchProjectListThunk, setMapProjects } from "../../store/slices/projectSlice";
+import EmptyPropertySection from "../../components/EmptyPropertySection";
 import { fetchHighGrowthProjectsThunk } from "../../store/slices/propertiesSlice";
 import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount } from "../../services/projectDisplay";
 import ReraStatusBadge, { isReraApproved } from "../../components/ReraStatusBadge";
@@ -452,6 +453,29 @@ export default function PropertyListing() {
     const [sortOpen, setSortOpen] = useState(false);
     const [bhkOpen, setBhkOpen] = useState(false);
     const [possessionOpen, setPossessionOpen] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        try {
+            const promises = [dispatch(fetchProjectListThunk())];
+            if (isFocusMode || isFeaturedMode) {
+                promises.push(dispatch(fetchFeaturedProjectsThunk()));
+            }
+            if (isHighGrowthMode) {
+                promises.push(dispatch(fetchHighGrowthProjectsThunk()));
+            }
+            if (isNearbyMode && latitude && longitude) {
+                promises.push(dispatch(fetchNearbyProjectsThunk({
+                    latitude: Number(latitude),
+                    longitude: Number(longitude),
+                })));
+            }
+            await Promise.allSettled(promises);
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('beforeRemove', () => {
@@ -739,6 +763,14 @@ export default function PropertyListing() {
                 renderItem={({ item }) => <ProjectCard item={item} />}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={["#4A43EC"]}
+                        tintColor="#4A43EC"
+                    />
+                }
                 ListEmptyComponent={
                     listLoading ? (
                         <View style={{ alignItems: 'center', marginTop: 60 }}>
@@ -747,11 +779,17 @@ export default function PropertyListing() {
                             </Text>
                         </View>
                     ) : (
-                        <View style={{ alignItems: 'center', marginTop: 60 }}>
-                            <MaterialCommunityIcons name="home-search-outline" size={48} color="#D1D5DB" />
-                            <Text style={{ fontSize: 15, color: '#9CA3AF', marginTop: 12 }}>No properties match your filters</Text>
-                            <Text style={{ fontSize: 13, color: '#D1D5DB', marginTop: 4 }}>Try adjusting or clearing filters</Text>
-                        </View>
+                        <EmptyPropertySection
+                            variant="list"
+                            icon="home-search-outline"
+                            title="No Properties Match"
+                            description="We couldn't find any properties matching your current filters. Try resetting filters to explore all available projects."
+                            actionText="Reset All Filters"
+                            onAction={() => {
+                                dispatch(clearFilters());
+                                setLocalQuery('');
+                            }}
+                        />
                     )
                 }
             />

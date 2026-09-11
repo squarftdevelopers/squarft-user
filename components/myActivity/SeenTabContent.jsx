@@ -152,6 +152,7 @@ export default function SeenTabContent({ refreshing = false, onRefresh }) {
         contentContainerStyle={{ paddingTop: 12, paddingBottom: 70 }}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={true}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
       />
     </View>

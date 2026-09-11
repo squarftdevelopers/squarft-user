@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyDeals } from "../../../store/slices/dealsSlice";
+import EmptyPropertySection from "../../../components/EmptyPropertySection";
 
 const Shimmer = ({ style, className }) => {
     const anim = useRef(new Animated.Value(0)).current;
@@ -205,6 +206,7 @@ export default function MyDeals() {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 150 }}
+                alwaysBounceVertical={true}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
             >
                 {/* Header Section */}
@@ -308,9 +310,14 @@ export default function MyDeals() {
                                 />
                             ))
                         ) : (
-                            <View className="flex-1 justify-center items-center py-20">
-                                <Text className="text-gray-400 font-manrope-medium">No deals for {activeFilter}</Text>
-                            </View>
+                            <EmptyPropertySection
+                                variant="list"
+                                icon="handshake-outline"
+                                title={`No ${activeFilter !== "All" ? activeFilter + " " : ""}Deals`}
+                                description={`You don't have any property deals in ${activeFilter.toLowerCase()} stage right now.`}
+                                actionText="Explore Properties"
+                                onAction={() => router.push("/(tabs)/home")}
+                            />
                         )}
                         <View className="h-4" />
                     </View>

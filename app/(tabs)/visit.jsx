@@ -477,6 +477,7 @@ export default function Visit() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: activeTab === "Book visit" && bookedSiteVisits.length > 0 ? 222 : 144 }}
         showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={true}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4A43EC"]} tintColor="#4A43EC" />}
       >
 

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Animated,
+  RefreshControl,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { LinearGradient } from "expo-linear-gradient";
@@ -312,6 +313,7 @@ export default function ProjectDetail() {
   const [activeTab, setActiveTab] = useState("Overview");
   const [bookModalVisible, setBookModalVisible] = useState(false);
   const [builderModalVisible, setBuilderModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const savedProjects = useSelector((s) => s.properties.favouriteProjects);
   const recommendedProperties = useSelector((s) => s.properties.recommended);
@@ -429,6 +431,33 @@ export default function ProjectDetail() {
       dispatch(fetchBuilderDetailsThunk({ builderId: projectOrganisationId }));
     }
   }, [dispatch, projectOrganisationId]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const promises = [];
+      if (detailLookupKey) {
+        promises.push(dispatch(fetchProjectDetailsThunk(detailLookupKey)));
+      }
+      if (resolvedProjectSlug && resolvedProjectSlug !== 'none') {
+        promises.push(dispatch(fetchFloorPlansThunk(resolvedProjectSlug)));
+        promises.push(dispatch(fetchResaleThunk(resolvedProjectSlug)));
+        promises.push(dispatch(fetchLandmarksThunk(resolvedProjectSlug)));
+        promises.push(dispatch(fetchAmenitiesThunk(resolvedProjectSlug)));
+        promises.push(dispatch(fetchSimilarPropertiesThunk(resolvedProjectSlug)));
+        promises.push(dispatch(fetchRecommendedPropertiesThunk()));
+      }
+      if (projectOrganisationId) {
+        promises.push(dispatch(fetchBuilderDetailsThunk({ builderId: projectOrganisationId })));
+      }
+      if (isLoggedIn && token) {
+        promises.push(dispatch(fetchSavedPropertiesThunk()));
+      }
+      await Promise.allSettled(promises);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Show the full-page skeleton until this specific project's details have
   // loaded (or failed) — a bare listProject preview isn't enough content to
@@ -640,6 +669,15 @@ export default function ProjectDetail() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
+        alwaysBounceVertical={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#4A43EC"]}
+            tintColor="#4A43EC"
+          />
+        }
       >
         {/* Hero Image */}
         <View style={{ width, height: 380 }}>
