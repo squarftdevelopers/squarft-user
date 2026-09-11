@@ -210,7 +210,7 @@ const TabDocuments = memo(function TabDocuments({ documents = [], dealId }) {
                         const viewType = file?.type ?? doc.type ?? (serverUri?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 'image' : 'pdf');
                         const viewName = file?.name ?? doc.name ?? doc.title ?? 'Document';
                         const docStatus = normalizeDocStatus(doc.status);
-                        const isUploadable = docStatus === 'required' || docStatus === 'pending';
+                        const isUploadable = false;
                         return (
                             <View
                                 key={`doc-item-${doc.id}`}

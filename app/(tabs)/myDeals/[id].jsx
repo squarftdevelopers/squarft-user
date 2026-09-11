@@ -90,8 +90,8 @@ export default function DealDetails() {
             : <DetailSkeleton />;
     }
 
-    const totalStages = deal.timeline?.length || 8;
-    const paidPct = Math.round(((deal.current_stage_index ?? 0) / totalStages) * 100);
+    const totalStages = deal.selling_broker_id ? 4 : (deal.timeline?.length || 8);
+    const paidPct = deal.status === 'closed' ? 100 : Math.min(99, Math.round(((deal.current_stage_index ?? 0) / totalStages) * 100));
     const uploadDealId = deal.apiDealId || deal.deal_id || deal.dealId || deal.id || id;
 
     const activeTabContent = (() => {
@@ -106,6 +106,8 @@ export default function DealDetails() {
     return (
         <View className="flex-1 bg-white">
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                <Pressable onPress={() => dispatch(fetchDealById(id))} style={{padding:16}}><Text>Refresh deal status</Text></Pressable>
+                {!!deal.selling_broker_id && <View style={{paddingHorizontal:20,paddingBottom:12}}><Text style={{fontWeight:'700'}}>Broker-assisted purchase</Text><Text>{['Deal in process','Documentation','Payment schedule','Completion requested'][deal.current_stage_index ?? 0]} · {deal.status === 'closed' ? 'Completed' : 'Updates and payments are reviewed by admin'}</Text></View>}
                 {/* Header */}
                 <View className="pt-[50px] pb-4 px-5 relative">
                     <LinearGradient
