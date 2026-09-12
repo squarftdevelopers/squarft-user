@@ -109,9 +109,9 @@
     },
     "extra": {
       "router": {},
-      "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "",
+      "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDiYnY4FG1juihWvHEgM-NSz2aEKUsKing",
       "eas": {
-        "projectId": "fc42ac04-0e6f-4adc-8835-ceb9e73674ba"
+        "projectId": "47989fcb-b769-4f23-b3bc-014e6781f3be"
       }
     },
     "runtimeVersion": {
