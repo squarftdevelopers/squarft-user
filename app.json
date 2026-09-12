@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "squarFT User",
-    "slug": "squarft",
+    "name": "SquarFT",
+    "slug": "squarft-user",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/app-icon.png",
     "scheme": "squarftuser",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "squarft",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.squarft.user",

@@ -34,5 +34,8 @@
       },
       "channel": "production-apk"
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
