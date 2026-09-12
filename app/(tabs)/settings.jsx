@@ -1,8 +1,8 @@
 import {
     View, Text, TouchableOpacity,
-    ScrollView, Switch, Alert, ActivityIndicator, Platform, RefreshControl,
+    ScrollView, Alert, ActivityIndicator, Platform, RefreshControl,
 } from "react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -14,13 +14,6 @@ import { getProfileDisplay } from "../../services/profileDisplay";
 import { AI_BASE_URL } from "../../services/config";
 import { ProfileSkeleton } from "../../components/SkeletonLoader";
 import UserAvatar from "../../components/UserAvatar";
-import {
-    authenticateBiometric,
-    getBiometricLabel,
-    getBiometricLockEnabled,
-    isBiometricHardwareAvailable,
-    setBiometricLockEnabled,
-} from "../../utils/biometricLock";
 
 const cardShadow = {
     shadowColor: "#7a7878ff",
@@ -95,9 +88,6 @@ export default function Settings() {
     const dispatch = useDispatch();
     const [loggingOut, setLoggingOut] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
-    const [biometricLockOn, setBiometricLockOn] = useState(false);
-    const [biometricLabel, setBiometricLabel] = useState("Biometric Lock");
-    const [biometricBusy, setBiometricBusy] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
     const { profile, user, profileLoading, profileError, isLoggedIn, token, profilePictureLoading } = useSelector((state) => state.auth);
@@ -116,47 +106,6 @@ export default function Settings() {
             setRefreshing(false);
         }
     }, [dispatch, isLoggedIn]);
-
-    useEffect(() => {
-        (async () => {
-            const [enabled, label] = await Promise.all([
-                getBiometricLockEnabled(),
-                getBiometricLabel(),
-            ]);
-            setBiometricLockOn(enabled);
-            setBiometricLabel(label);
-        })();
-    }, []);
-
-    const handleBiometricToggle = async (nextValue) => {
-        if (biometricBusy) return;
-
-        if (nextValue) {
-            const available = await isBiometricHardwareAvailable();
-            if (!available) {
-                Alert.alert(
-                    "Not available",
-                    `${biometricLabel} is not set up on this device. Please enroll it in your device settings first.`
-                );
-                return;
-            }
-        }
-
-        setBiometricBusy(true);
-        try {
-            const confirmed = await authenticateBiometric(
-                nextValue ? `Enable ${biometricLabel} lock` : `Disable ${biometricLabel} lock`
-            );
-            if (!confirmed) return;
-
-            await setBiometricLockEnabled(nextValue);
-            setBiometricLockOn(nextValue);
-        } catch (error) {
-            Alert.alert('Unable to update lock', error?.message || 'Please try again.');
-        } finally {
-            setBiometricBusy(false);
-        }
-    };
 
     const handleLogout = () => {
         Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -351,31 +300,15 @@ export default function Settings() {
                         label="Phone Number"
                         sublabel={displayPhone || "Not available"}
                         right={<View />}
+                        isLast={!branch?.name}
                     />
                     {branch?.name ? <SettingsRow
                         icon={<Ionicons name="business-outline" size={18} color="#4A43EC" />}
                         label="Branch"
                         sublabel={[branch.name, branch.city].filter(Boolean).join(' — ')}
                         right={<View />}
-                    /> : null}
-                    <SettingsRow
-                        icon={<MaterialCommunityIcons name="fingerprint" size={18} color="#4A43EC" />}
-                        label="Biometric Lock"
-                        sublabel={biometricLockOn ? `Enabled (${biometricLabel})` : "Disabled"}
-                        right={
-                            biometricBusy ? (
-                                <ActivityIndicator size="small" color="#4A43EC" />
-                            ) : (
-                                <Switch
-                                    value={biometricLockOn}
-                                    onValueChange={handleBiometricToggle}
-                                    trackColor={{ false: '#E5E7EB', true: '#4A43EC' }}
-                                    thumbColor="#fff"
-                                />
-                            )
-                        }
                         isLast
-                    />
+                    /> : null}
                 </SettingsCard>
 
                 {/* My Activity */}
@@ -417,22 +350,22 @@ export default function Settings() {
                     <SettingsRow
                         icon={<MaterialCommunityIcons name="email-outline" size={18} color="#475569" />}
                         label="Contact Us"
-                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Contact Us" } })}
+                        onPress={() => router.push("/(screens)/contact-us")}
                     />
                     <SettingsRow
                         icon={<Ionicons name="document-text-outline" size={18} color="#475569" />}
                         label="Terms & Conditions"
-                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Terms & Conditions" } })}
+                        onPress={() => router.push("/(screens)/terms-and-conditions")}
                     />
                     <SettingsRow
                         icon={<Ionicons name="shield-checkmark-outline" size={18} color="#475569" />}
                         label="Privacy Policy"
-                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "Privacy Policy" } })}
+                        onPress={() => router.push("/(screens)/privacy-policy")}
                     />
                     <SettingsRow
                         icon={<Ionicons name="help-circle-outline" size={18} color="#475569" />}
                         label="FAQs"
-                        onPress={() => router.push({ pathname: "/(screens)/coming-soon", params: { title: "FAQs" } })}
+                        onPress={() => router.push("/(screens)/faqs")}
                         isLast
                     />
                 </SettingsCard>

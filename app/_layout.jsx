@@ -20,7 +20,6 @@ import { store } from "../store/store";
 import AppActivityTracker from "../components/AppActivityTracker";
 import PushNotificationRegistrar from "../components/PushNotificationRegistrar";
 import FilterModal from "../components/FilterModal";
-import BiometricLockGate from "../components/BiometricLockGate";
 import { hydrateAndCleanTrackers } from "../store/slices/projectViewTrackingSlice";
 import { hydrateAndCleanRecentTrackers } from "../store/slices/recentProjectsSlice";
 import * as Location from "expo-location";
@@ -185,14 +184,12 @@ export default function RootLayout() {
                         <AppActivityTracker />
                         <PushNotificationRegistrar />
                         <FilterModal />
-                        <BiometricLockGate>
-                            <Stack screenOptions={{ gestureEnabled: false }}>
-                                <Stack.Screen name="index" options={{ headerShown: false }} />
-                                <Stack.Screen name="(auth)" options={{ headerShown: false, animation: "none" }} />
-                                <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
-                                <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-                            </Stack>
-                        </BiometricLockGate>
+                        <Stack screenOptions={{ gestureEnabled: false }}>
+                            <Stack.Screen name="index" options={{ headerShown: false }} />
+                            <Stack.Screen name="(auth)" options={{ headerShown: false, animation: "none" }} />
+                            <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
+                            <Stack.Screen name="(screens)" options={{ headerShown: false }} />
+                        </Stack>
                         {showAnimatedSplash && (
                             <AnimatedSplashScreen onFinish={() => setShowAnimatedSplash(false)} />
                         )}
