@@ -83,9 +83,9 @@ export const registerForPushNotificationsAsync = async (authToken) => {
         return null;
     }
 
-    if (Constants.isDevice === false) {
+    if (Platform.OS === "ios" && Constants.isDevice === false) {
         logPushNotification("Registration skipped", {
-            reason: "physical-device-required",
+            reason: "ios-simulator-not-supported",
         });
         return null;
     }

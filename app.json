@@ -8,7 +8,7 @@
     "scheme": "squarftuser",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "owner": "squarft",
+    "owner": "squarft-team",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.squarft.user",
@@ -56,7 +56,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icons/app-icon.png",
+          "color": "#4A43EC",
+          "defaultChannel": "customer-offers"
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -111,14 +118,14 @@
       "router": {},
       "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDiYnY4FG1juihWvHEgM-NSz2aEKUsKing",
       "eas": {
-        "projectId": "47989fcb-b769-4f23-b3bc-014e6781f3be"
+        "projectId": "82b2ad3e-48ad-4c46-8af9-f319a0ed9905"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/fc42ac04-0e6f-4adc-8835-ceb9e73674ba"
+      "url": "https://u.expo.dev/82b2ad3e-48ad-4c46-8af9-f319a0ed9905"
     }
   }
 }
