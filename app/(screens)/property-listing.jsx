@@ -441,12 +441,15 @@ export default function PropertyListing() {
     const { list: apiProjects, featured, nearby, loading: projectsLoading, featuredLoading, nearbyLoading } = useSelector((state) => state.project);
     const { highGrowthProjects, highGrowthLocalities, highGrowthLoading, highGrowthCity } = useSelector((state) => state.properties);
     const unreadNotifications = useSelector((s) => s.notifications?.list?.filter((item) => !item.watched).length ?? 0);
-    const { category, focus, featured: featuredParam, recommended, highGrowth, nearby: nearbyParam, latitude, longitude, locationName } = useLocalSearchParams();
+    const { category, focus, featured: featuredParam, recommended, highGrowth, nearby: nearbyParam, latitude, longitude, locationName, branchId, branchName, locationFilter } = useLocalSearchParams();
+    const selectedBranchId = Array.isArray(branchId) ? branchId[0] : branchId;
+    const selectedBranchName = (Array.isArray(branchName) ? branchName[0] : branchName) || 'Branch projects';
     const isFocusMode = focus === '1';
     const isFeaturedMode = featuredParam === '1';
     const isRecommendedMode = recommended === '1';
     const isHighGrowthMode = highGrowth === '1';
     const isNearbyMode = nearbyParam === '1';
+    const isLocationFilterMode = locationFilter === '1';
     const nearbyLocationName = Array.isArray(locationName) ? locationName[0] : locationName;
     const [localQuery, setLocalQuery] = useState(isNearbyMode ? (nearbyLocationName || filter.searchQuery || '') : (filter.searchQuery || ''));
     const [sortKey, setSortKey] = useState('relevance');
@@ -555,7 +558,11 @@ export default function PropertyListing() {
             reraOnly: false,
         }
         : (isNearbyMode ? { ...filter, searchQuery: '' } : filter);
-    const filtered = applyFilters(projects, effectiveFilter);
+    const filtered = applyFilters(projects, {
+        ...effectiveFilter,
+        branchId: selectedBranchId,
+        ...(isLocationFilterMode ? { locationCoordinates: { latitude: Number(latitude), longitude: Number(longitude) } } : {}),
+    });
 
     const sorted = [...filtered].sort((a, b) => {
         if (sortKey === 'newest') return getCreatedTime(b) - getCreatedTime(a);
@@ -575,7 +582,7 @@ export default function PropertyListing() {
     const activeSortLabel = SORT_OPTIONS.find(o => o.key === sortKey)?.label ?? 'Relevance';
     const handleOpenMap = () => {
         dispatch(setMapProjects(sorted));
-        const title = isFeaturedMode
+        const title = selectedBranchId ? selectedBranchName : isLocationFilterMode ? 'Nearby Projects' : isFeaturedMode
             ? 'Featured Projects'
             : (isRecommendedMode
                 ? 'Recommended Projects'
@@ -590,7 +597,7 @@ export default function PropertyListing() {
         });
     };
 
-    const pageTitle = isFeaturedMode
+    const pageTitle = selectedBranchId ? selectedBranchName : isLocationFilterMode ? 'Nearby Projects' : isFeaturedMode
         ? 'Featured Projects'
         : (isRecommendedMode
             ? 'Recommended Projects'
@@ -782,10 +789,14 @@ export default function PropertyListing() {
                         <EmptyPropertySection
                             variant="list"
                             icon="home-search-outline"
-                            title="No Properties Match"
-                            description="We couldn't find any properties matching your current filters. Try resetting filters to explore all available projects."
-                            actionText="Reset All Filters"
+                            title={selectedBranchId ? "No Projects Match in This Branch" : "No Properties Match"}
+                            description={selectedBranchId ? "Try another branch or adjust your search and filters." : "We couldn't find any properties matching your current filters. Try resetting filters to explore all available projects."}
+                            actionText={selectedBranchId || isLocationFilterMode ? "Choose another location" : "Reset All Filters"}
                             onAction={() => {
+                                if (selectedBranchId || isLocationFilterMode) {
+                                    router.back();
+                                    return;
+                                }
                                 dispatch(clearFilters());
                                 setLocalQuery('');
                             }}

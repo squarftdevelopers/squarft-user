@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
 
-const SPLASH_DURATION_MS = 1300;
+const SPLASH_DURATION_MS = 650;
 
 export default function Index() {
     const router = useRouter();

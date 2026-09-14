@@ -1,4 +1,5 @@
-import { View, Text, Image } from "react-native";
+import { View, Text } from "react-native";
+import ProgressiveImage from './ProgressiveImage';
 
 const PALETTE = [
     "#4A43EC", "#F97316", "#059669", "#DB2777",
@@ -20,7 +21,7 @@ export default function UserAvatar({ uri, name, size = 48, style, textStyle }) {
 
     if (uri) {
         return (
-            <Image
+            <ProgressiveImage
                 source={{ uri }}
                 style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
                 resizeMode="cover"

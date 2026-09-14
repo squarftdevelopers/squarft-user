@@ -1,7 +1,8 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { buildProjectAddress, buildProjectPrice } from "../services/projectDisplay";
+import ProgressiveImage from './ProgressiveImage';
 
 const luxuryApartments = require("../assets/images/Luxury Apartments.png");
 
@@ -53,7 +54,7 @@ export default function FeaturedCard({ item, onToggleFav, showBookVisit = false 
             style={cardShadow}
         >
             <View className="relative">
-                <Image source={imageSource} className="w-[278px] h-[150px]" resizeMode="cover" />
+                <ProgressiveImage source={imageSource} style={{ width: 278, height: 150 }} resizeMode="cover" />
                 <View className="absolute top-4 left-4 bg-[#6C3BFF] px-3 py-1.5 rounded-full">
                     <Text className="text-white font-inter-bold text-[10px]">FEATURED</Text>
                 </View>

@@ -49,7 +49,7 @@ function AuthHydrator() {
 
         const timer = setTimeout(() => {
             SplashScreen.hideAsync();
-        }, 300);
+        }, 180);
         return () => clearTimeout(timer);
     }, [authChecked]);
 

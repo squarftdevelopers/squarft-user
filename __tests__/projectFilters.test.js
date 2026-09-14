@@ -141,3 +141,24 @@ test('parses combined property, BHK, location, budget, area, and amenity keyword
   expect(ids(applyProjectFilters(keywordProjects, { ...defaultFilter, searchQuery: '500 squarefeet plots under 20 Lakh' }))).toEqual(['vijay-plot']);
   expect(ids(applyProjectFilters(keywordProjects, { ...defaultFilter, searchQuery: 'Villa in mumbai with pool' }))).toEqual(['mumbai-villa']);
 });
+
+test('branch selection excludes other branches in the same city and unassigned projects', () => {
+  const list = [
+    { ...projects[0], id: 'a', branch_id: 'branch-a' },
+    { ...projects[0], id: 'b', branch_id: 'branch-b' },
+    { ...projects[0], id: 'unassigned', branch_id: null },
+  ];
+  expect(applyProjectFilters(list, { branchId: 'branch-a' }).map((p) => p.id)).toEqual(['a']);
+  expect(applyProjectFilters(list, { branchId: 'missing' })).toEqual([]);
+  expect(applyProjectFilters(list, {})).toHaveLength(3);
+  expect(applyProjectFilters(list, { branchId: 'branch-a', searchQuery: 'does-not-exist' })).toEqual([]);
+});
+
+test('current location uses the map picker radius and excludes missing coordinates', () => {
+  const list = [
+    { id: 'near', latitude: 22.72, longitude: 75.86 },
+    { id: 'far', latitude: 23.0, longitude: 75.86 },
+    { id: 'unknown' },
+  ];
+  expect(applyProjectFilters(list, { locationCoordinates: { latitude: 22.72, longitude: 75.86 } }).map((p) => p.id)).toEqual(['near']);
+});

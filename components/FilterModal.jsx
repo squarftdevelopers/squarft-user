@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import RangeSliderLib from "react-native-fast-range-slider";
@@ -202,6 +202,7 @@ function CheckBox({ label, checked, onPress }) {
 }
 
 export default function FilterModal() {
+    const pathname = usePathname();
     const dispatch = useDispatch();
     const insets = useSafeAreaInsets();
     const { isOpen, address, locationCoordinates, tags, propertyTypes, propertySubTypes, budgetRange, areaRange, possessionStatus } = useSelector((state) => state.filter);
@@ -411,7 +412,9 @@ export default function FilterModal() {
                                 }
                                 
                                 dispatch(closeFilter());
-                                router.push('/(screens)/property-listing');
+                                if (!pathname.endsWith('/property-listing')) {
+                                    router.push('/(screens)/property-listing');
+                                }
                             }}
                             style={{ 
                                 backgroundColor: geocoding ? '#9CA3AF' : '#4A43EC', 

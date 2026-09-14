@@ -388,6 +388,7 @@ export const applyProjectFilters = (projects = [], filter = {}, options = {}) =>
   const radiusKm = options.radiusKm || LOCATION_RADIUS_KM;
 
   return projects.filter((project) => {
+    if (filter.branchId && String(project.branch_id || '').toLowerCase() !== String(filter.branchId).toLowerCase()) return false;
     const searchText = getSearchText(project);
 
     if (filter.locationCoordinates) {

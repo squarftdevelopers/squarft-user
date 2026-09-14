@@ -33,7 +33,8 @@ import { setSearchActive } from "../../store/slices/appSlice";
 import FeaturedCard from "../../components/FeaturedCard";
 import { fetchFeaturedProjectsThunk, fetchProjectListThunk } from "../../store/slices/projectSlice";
 import { LinearGradient } from "expo-linear-gradient";
-import { RecommendedProjectsSkeleton, FeaturedProjectsSkeleton, ProjectInFocusSkeleton, HighGrowthLocalitiesSkeleton } from "../../components/SkeletonLoader";
+import { RecommendedProjectsSkeleton, FeaturedProjectsSkeleton, ProjectInFocusSkeleton, HighGrowthLocalitiesSkeleton, Shimmer } from "../../components/SkeletonLoader";
+import ProgressiveImage from "../../components/ProgressiveImage";
 import { buildProjectAddress, buildProjectPrice } from "../../services/projectDisplay";
 import { useRefetchOnForeground } from "../../hooks/useRefetchOnForeground";
 import { applyProjectFilters, hasActiveProjectFilters } from "../../services/projectFilters";
@@ -100,7 +101,7 @@ function RecommendedCard({ item, onToggleFav, onToggleSeen, onToggleContacted, o
       }}
     >
       <View style={{ position: "relative" }}>
-        <Image
+        <ProgressiveImage
           source={typeof item.image === "string" ? { uri: item.image } : item.image}
           style={{ width: 144, height: 148, borderRadius: 12 }}
           resizeMode="cover"
@@ -216,7 +217,9 @@ export default function Home() {
   const searchActive = useSelector((state) => state.app.searchActive);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const { token, profile, user } = useSelector((s) => s.auth);
+  const [homeBootstrapping, setHomeBootstrapping] = useState(true);
+  const hasBootstrapped = useRef(false);
+  const { token, profile, user, profileLoading } = useSelector((s) => s.auth);
   const {
     highGrowthProjects,
     highGrowthLoading,
@@ -326,7 +329,11 @@ export default function Home() {
 
   useFocusEffect(
     useCallback(() => {
-      refreshHomeData();
+      const request = refreshHomeData();
+      if (!hasBootstrapped.current) {
+        hasBootstrapped.current = true;
+        request.finally(() => setHomeBootstrapping(false));
+      }
       return () => undefined;
     }, [refreshHomeData])
   );
@@ -349,6 +356,10 @@ export default function Home() {
       ? applyProjectFilters(projectList || [], filters)
       : (projectList || [])
   ), [filters, projectList]);
+  const showProfileSkeleton = homeBootstrapping || (profileLoading && !profile);
+  const showRecommendedSkeleton = homeBootstrapping || recommendedLoading;
+  const showFeaturedSkeleton = homeBootstrapping || featuredLoading;
+  const showHighGrowthSkeleton = homeBootstrapping || highGrowthLoading;
 
   if (searchActive) {
     return (
@@ -461,30 +472,28 @@ export default function Home() {
           {/* Header Row */}
           <View className="flex-row justify-between items-center px-5 pt-2 pb-4 mb-4">
             <View className="flex-1 flex-row items-center gap-2 mr-3">
-              <View className="w-[46px] h-[46px] relative">
-                <UserAvatar
-                  uri={displayAvatar}
-                  name={displayUserName}
-                  size={46}
-                  style={{ borderWidth: 2, borderColor: "#FFFFFF" }}
-                />
-              </View>
-              <View className="flex-1">
-                <View className="flex-row items-center gap-1">
-                  <Text
-                    className="text-[15px] font-lato-bold text-white"
-                    style={{ flexShrink: 1 }}
-                    numberOfLines={1}
-                  >
-                    {displayUserName}
-                  </Text>
-                  <MaterialIcons name="verified" size={18} color="#3AFF08" />
+              {showProfileSkeleton ? (
+                <Shimmer style={{ width: 46, height: 46, borderRadius: 23 }} />
+              ) : (
+                <View className="w-[46px] h-[46px] relative">
+                  <UserAvatar
+                    uri={displayAvatar}
+                    name={displayUserName}
+                    size={46}
+                    style={{ borderWidth: 2, borderColor: "#FFFFFF" }}
+                  />
                 </View>
-                {displayJoinedDate ? (
-                  <Text className="text-[10px] font-lato-regular text-white mt-1">
-                    {displayJoinedDate}
-                  </Text>
-                ) : null}
+              )}
+              <View className="flex-1">
+                {showProfileSkeleton ? (
+                  <><Shimmer style={{ height: 15, width: 116, marginBottom: 7 }} /><Shimmer style={{ height: 10, width: 84 }} /></>
+                ) : <>
+                  <View className="flex-row items-center gap-1">
+                    <Text className="text-[15px] font-lato-bold text-white" style={{ flexShrink: 1 }} numberOfLines={1}>{displayUserName}</Text>
+                    <MaterialIcons name="verified" size={18} color="#3AFF08" />
+                  </View>
+                  {displayJoinedDate ? <Text className="text-[10px] font-lato-regular text-white mt-1">{displayJoinedDate}</Text> : null}
+                </>}
               </View>
             </View>
             <View className="flex-row items-center gap-3">
@@ -544,9 +553,9 @@ export default function Home() {
               </View>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push('/(screens)/location-picker')}
+              onPress={() => router.push('/(screens)/browse-location')}
               accessibilityRole="button"
-              accessibilityLabel="Choose location on map"
+              accessibilityLabel="Browse by branch or current location"
               className="w-[44px] h-[44px] rounded-xl bg-white items-center justify-center"
               style={{ shadowColor: "#edabd8ff", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 30, elevation: 4 }}
             >
@@ -614,7 +623,7 @@ export default function Home() {
             </TouchableOpacity>
           </View>
 
-          {recommendedLoading ? (
+          {showRecommendedSkeleton ? (
             <RecommendedProjectsSkeleton count={2} />
           ) : recommendedProjects.length > 0 ? (
             <FlatList
@@ -667,7 +676,7 @@ export default function Home() {
               <Text className="text-[12px] text-[#6C3BFF] font-manrope-bold">View All</Text>
             </TouchableOpacity>
           </View>
-          {featuredLoading ? (
+          {showFeaturedSkeleton ? (
             <FeaturedProjectsSkeleton count={2} />
           ) : featuredProjects.length > 0 ? (
             <FlatList
@@ -720,7 +729,7 @@ export default function Home() {
             <Text className="text-sm text-indigo-500 font-manrope-bold">View All</Text>
           </TouchableOpacity>
         </View>
-        {featuredLoading ? (
+        {showFeaturedSkeleton ? (
           <ProjectInFocusSkeleton count={2} />
         ) : projectsInFocus.length > 0 ? (
           projectsInFocus.map((project) => {
@@ -734,7 +743,7 @@ export default function Home() {
                 className="mx-6 mb-4 rounded-2xl overflow-hidden h-[190px]"
               >
                 {projectImage ? (
-                  <Image source={projectImage} className="w-full h-full" resizeMode="cover" />
+                  <ProgressiveImage source={projectImage} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 ) : (
                   <View className="w-full h-full bg-gray-200 items-center justify-center">
                     <MaterialCommunityIcons name="office-building-outline" size={34} color="#9CA3AF" />
@@ -771,7 +780,7 @@ export default function Home() {
             <Text className="text-sm text-[#6C3BFF] font-manrope-bold">View All</Text>
           </TouchableOpacity>
         </View>
-        {highGrowthLoading ? (
+        {showHighGrowthSkeleton ? (
           <HighGrowthLocalitiesSkeleton count={2} />
         ) : displayHighGrowthProjects.length > 0 ? (
           displayHighGrowthProjects.slice(0, 2).map((item) => {
@@ -790,7 +799,7 @@ export default function Home() {
               >
                 <View className="w-[130px] h-[130px] rounded-2xl border border-indigo-100 overflow-hidden items-center justify-center">
                   {itemImage ? (
-                    <Image source={itemImage} style={{ width: 130, height: 130 }} resizeMode="cover" />
+                    <ProgressiveImage source={itemImage} style={{ width: 130, height: 130 }} resizeMode="cover" />
                   ) : (
                     <View className="w-[130px] h-[130px] bg-gray-100 items-center justify-center">
                       <MaterialCommunityIcons name="office-building-outline" size={32} color="#9CA3AF" />
