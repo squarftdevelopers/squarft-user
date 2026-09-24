@@ -157,6 +157,7 @@ export default function OtpVerification() {
                                     textContentType={index === 0 ? "oneTimeCode" : "none"}
                                     autoComplete={index === 0 ? "sms-otp" : "off"}
                                     importantForAutofill={index === 0 ? "yes" : "no"}
+                                    autoFocus={index === 0}
                                     maxLength={index === 0 ? 6 : 1}
                                     style={{
                                         marginTop: 10,

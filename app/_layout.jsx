@@ -1,12 +1,12 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Stack, useRootNavigationState, useRouter } from "expo-router";
+import { Stack, usePathname, useRootNavigationState, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { useFonts } from "expo-font";
-import { AppState, Platform } from "react-native";
+import { Alert, AppState, BackHandler, Platform } from "react-native";
 import * as NavigationBar from "expo-navigation-bar";
 import "../global.css";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -52,6 +52,32 @@ function AuthHydrator() {
         }, 180);
         return () => clearTimeout(timer);
     }, [authChecked]);
+
+    return null;
+}
+
+function AndroidExitGuard() {
+    const router = useRouter();
+    const pathname = usePathname();
+
+    useEffect(() => {
+        if (Platform.OS !== "android") return undefined;
+
+        const onBackPress = () => {
+            if (router.canGoBack()) {
+                return false;
+            }
+
+            Alert.alert("Exit app", "Are you sure you want to exit the app?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Exit", style: "destructive", onPress: () => BackHandler.exitApp() },
+            ]);
+            return true;
+        };
+
+        const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+        return () => subscription.remove();
+    }, [pathname, router]);
 
     return null;
 }
@@ -181,6 +207,7 @@ export default function RootLayout() {
                 <Provider store={store}>
                     <BottomSheetModalProvider>
                         <AuthHydrator />
+                        <AndroidExitGuard />
                         <SessionExpiryGuard />
                         <ActivityTrackerHydrator />
                         <AppActivityTracker />
