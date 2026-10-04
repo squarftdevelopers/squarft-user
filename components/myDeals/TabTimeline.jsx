@@ -1,7 +1,6 @@
 import { View, Text, Image, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { memo, useRef, useEffect, useMemo, useState } from 'react';
-import { timelineData } from "../../data/my-deals";
 import TimelineItem from './TimelineItem';
 
 const DOT_CENTER_OFFSET = 11;
@@ -35,16 +34,44 @@ const formatTimelineTime = (item) => {
     });
 };
 
+const formatScheduledTime = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+};
+
 const getTimelineTitle = (item) =>
     item.stage_name || item.title || item.milestone || 'Deal update';
 
 const getTimelineDescription = (item) =>
     item.details || item.description || item.note || '';
 
-const TabTimeline = memo(function TabTimeline({ timeline = [], currentStageIndex = 0 }) {
+const TabTimeline = memo(function TabTimeline({ timeline = [], currentStageIndex = 0, activity = {} }) {
     const lineAnim = useRef(new Animated.Value(0)).current;
     const [itemLayouts, setItemLayouts] = useState({});
-    const items = timeline.length > 0 ? timeline : timelineData;
+    const items = timeline;
+    const activityItems = useMemo(() => [
+        ...(activity.meetings || []).map((item) => ({
+            ...item,
+            id: `meeting-${item.id}`,
+            title: item.agenda || 'Meeting scheduled',
+            details: item.remarks || item.mode || '',
+            created_at: item.created_at || (item.date && item.time ? `${item.date}T${item.time}` : item.date),
+        })),
+        ...(activity.notes || []).map((item) => ({
+            ...item,
+            id: `note-${item.id}`,
+            title: 'Deal note',
+            details: item.text,
+        })),
+        ...(activity.timeline || []).map((item) => ({ ...item, id: `update-${item.id || item.created_at}` })),
+    ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)), [activity]);
     const statuses = useMemo(
         () => items.map((item, index) => normalizeTimelineStatus(item.status, index, currentStageIndex)),
         [items, currentStageIndex]
@@ -85,7 +112,11 @@ const TabTimeline = memo(function TabTimeline({ timeline = [], currentStageIndex
                 </View>
             </View>
 
-            <View className="relative">
+            {items.length === 0 ? (
+                <View className="rounded-xl bg-[#F8F7FF] px-4 py-5">
+                    <Text className="text-[12px] font-inter-medium text-[#6B7280]">Timeline details are not available yet.</Text>
+                </View>
+            ) : <View className="relative">
                 {/* Static grey track */}
                 <View
                     className="absolute left-[9px] w-[2px] bg-[#E5E7EB]"
@@ -144,10 +175,10 @@ const TabTimeline = memo(function TabTimeline({ timeline = [], currentStageIndex
                                 )}
                             </View>
                         )}
-                        {item.actionText && item.actionIcon && (
+                        {(item.actionText || item.scheduled_at) && item.actionIcon && (
                             <View className="mt-2 flex-row items-center bg-[#F3F4F6] px-2 py-1 rounded-[6px] self-start gap-1.5">
                                 <Feather name={item.actionIcon} size={10} color="#6231FF" />
-                                <Text className="text-[10px] font-inter-semibold text-[#1F2937]">{item.actionText}</Text>
+                                <Text className="text-[10px] font-inter-semibold text-[#1F2937]">{item.actionText || formatScheduledTime(item.scheduled_at)}</Text>
                             </View>
                         )}
                         {description && (
@@ -172,7 +203,24 @@ const TabTimeline = memo(function TabTimeline({ timeline = [], currentStageIndex
                     </TimelineItem>
                     );
                 })}
-            </View>
+            </View>}
+
+            {activityItems.length > 0 && (
+                <View className="mt-2 pt-5 border-t border-[#EEF0F4]">
+                    <Text className="text-[14px] font-manrope-bold text-[#111827] mb-3">Meetings & notes</Text>
+                    {activityItems.map((item) => (
+                        <View key={item.id} className="mb-3 rounded-xl border border-[#ECEAF8] bg-[#FCFBFF] px-3.5 py-3">
+                            <View className="flex-row justify-between gap-3">
+                                <Text className="flex-1 text-[12px] font-inter-bold text-[#27233A]">{getTimelineTitle(item)}</Text>
+                                <Text className="text-[9px] font-inter-medium text-[#9CA3AF]">{formatTimelineTime(item)}</Text>
+                            </View>
+                            {!!getTimelineDescription(item) && (
+                                <Text className="text-[11px] font-inter-medium text-[#6B7280] mt-1 leading-[16px]">{getTimelineDescription(item)}</Text>
+                            )}
+                        </View>
+                    ))}
+                </View>
+            )}
         </View>
     );
 });

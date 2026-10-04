@@ -11,13 +11,13 @@ import TabPayments from "../../../components/myDeals/TabPayments";
 import TabDocuments from "../../../components/myDeals/TabDocuments";
 import TabOverview from "../../../components/myDeals/TabOverview";
 
-const TABS = ["Deal Created", "Meetings & Notes", "Token", "Payment Schedule", "Payment History", "Documents", "Timeline"];
+const TABS = ["Deal Created", "Timeline", "Token", "Payment Schedule", "Payment History", "Documents"];
 
 const formatValue = (val) => {
     const num = Number(val);
     if (!Number.isFinite(num)) return "₹0";
     if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
-    if (num >= 100000) return `₹${(num / 100000).toFixed(0)} L`;
+    if (num >= 100000) return `₹${Number((num / 100000).toFixed(2))} L`;
     return `₹${num.toLocaleString("en-IN")}`;
 };
 
@@ -30,7 +30,7 @@ const Shimmer = ({ style }) => {
                 Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
             ])
         ).start();
-    }, []);
+    }, [anim]);
     const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.7] });
     return <Animated.View style={[{ backgroundColor: '#E5E7EB', borderRadius: 6, opacity }, style]} />;
 };
@@ -100,19 +100,26 @@ export default function DealDetails() {
             : <DetailSkeleton />;
     }
 
-    const totalStages = deal.deal_stages?.length || 7;
-    const paidPct = deal.status === 'closed' ? 100 : Math.min(99, Math.round(((deal.current_stage_index ?? 0) / totalStages) * 100));
+    const totalStages = deal.journey_total_stages || deal.deal_timeline_stages?.length || 8;
+    const currentJourneyStage = deal.journey_current_stage || 1;
+    const paidPct = deal.total_value > 0
+        ? Math.min(100, Math.round(((deal.paid_so_far || 0) / deal.total_value) * 100))
+        : 0;
     const uploadDealId = deal.apiDealId || deal.deal_id || deal.dealId || deal.id || id;
 
     const activeTabContent = (() => {
         switch (activeTab) {
             case "Deal Created": return <TabOverview deal={deal} />;
-            case "Meetings & Notes": return <TabTimeline timeline={(deal.timeline ?? []).filter((item) => /meeting|note/i.test(`${item.title || ''} ${item.details || ''}`))} currentStageIndex={0} />;
+            case "Timeline": return <TabTimeline
+                timeline={deal.deal_timeline_stages ?? []}
+                currentStageIndex={0}
+                activity={{ timeline: deal.timeline, meetings: deal.meetings, notes: deal.notes }}
+            />;
             case "Token": return <TabPayments payments={(deal.payments ?? []).filter((payment) => payment.is_token || /token/i.test(payment.title || payment.milestone || ''))} />;
             case "Payment Schedule": return <TabPayments payments={deal.payments ?? []} />;
             case "Payment History": return <TabPayments payments={(deal.payments ?? []).filter((payment) => ['paid', 'completed', 'partial'].includes(String(payment.status).toLowerCase()))} />;
             case "Documents": return <TabDocuments documents={deal.documents ?? []} dealId={uploadDealId} />;
-            default: return <TabTimeline timeline={deal.timeline ?? []} currentStageIndex={deal.current_stage_index ?? 0} />;
+            default: return <TabOverview deal={deal} />;
         }
     })();
 
@@ -173,7 +180,7 @@ export default function DealDetails() {
                         </View>
                         <View className="flex-1 h-[40px] bg-[rgba(255,255,255,0.15)] rounded-[10px] justify-center px-3">
                             <Text className="text-[13px] font-manrope-bold text-white mb-0.5">
-                                Stage {deal.current_stage_index}/{totalStages}
+                                Stage {currentJourneyStage}/{totalStages}
                             </Text>
                             <Text className="text-[9px] font-manrope-medium text-white/80">Timeline</Text>
                         </View>

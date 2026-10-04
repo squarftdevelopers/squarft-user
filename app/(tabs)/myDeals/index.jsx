@@ -87,14 +87,17 @@ const formatValue = (val) => {
     const num = Number(val);
     if (!Number.isFinite(num)) return "₹0";
     if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
-    if (num >= 100000) return `₹${(num / 100000).toFixed(0)} L`;
+    if (num >= 100000) return `₹${Number((num / 100000).toFixed(2))} L`;
     return `₹${num.toLocaleString('en-IN')}`;
 };
 
 const DealCard = memo(function DealCard({ deal, animKey, onPress }) {
     const isActive = deal.status === 'active';
-    const totalStages = 8;
-    const paidPct = Math.min(100, Math.max(0, Math.round(((deal.current_stage_index || 0) / totalStages) * 100)));
+    const totalStages = deal.journey_total_stages || 8;
+    const currentStage = deal.journey_current_stage || 1;
+    const paidPct = deal.total_value > 0
+        ? Math.min(100, Math.max(0, Math.round((deal.paid_so_far / deal.total_value) * 100)))
+        : 0;
     const statusLabel = deal.status ? deal.status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) : 'Pending';
     return (
         <Pressable
@@ -126,7 +129,7 @@ const DealCard = memo(function DealCard({ deal, animKey, onPress }) {
                 </View>
                 <View className="flex-1">
                     <Text className="text-[10px] font-manrope-medium text-[#9CA3AF] mb-0.5">Stage</Text>
-                    <Text className="text-[13px] font-manrope-bold text-[#4F48ED]">{deal.current_stage_index}/{totalStages}</Text>
+                    <Text className="text-[13px] font-manrope-bold text-[#4F48ED]">{currentStage}/{totalStages}</Text>
                 </View>
             </View>
             <ProgressBar percentage={paidPct} animKey={animKey} />
@@ -174,7 +177,7 @@ export default function MyDeals() {
         const num = Number(stats.totalValue);
         if (!Number.isFinite(num)) return "₹0";
         if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
-        if (num >= 100000) return `₹${(num / 100000).toFixed(0)} L`;
+        if (num >= 100000) return `₹${Number((num / 100000).toFixed(2))} L`;
         return `₹${num.toLocaleString('en-IN')}`;
     }, [stats.totalValue]);
 
