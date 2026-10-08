@@ -18,7 +18,6 @@ import {
   Ionicons,
   MaterialCommunityIcons,
   MaterialIcons,
-  AntDesign,
   Octicons,
 } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
@@ -561,9 +560,13 @@ export default function Home() {
             >
               <MaterialCommunityIcons name="map-marker-radius-outline" size={20} color="#4A43EC" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => dispatch(openFilter())} className="flex-row items-center bg-[#4A43EC] rounded-xl px-5 h-[44px] gap-2">
-              <AntDesign name="spotify" size={18} color="#7F88E5" />
-              <Text className="text-white text-sm font-semibold">Filters</Text>
+            <TouchableOpacity
+              onPress={() => dispatch(openFilter())}
+              accessibilityRole="button"
+              accessibilityLabel="Open filters"
+              className="w-[44px] h-[44px] items-center justify-center bg-[#4A43EC] rounded-xl"
+            >
+              <MaterialCommunityIcons name="filter-variant" size={21} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
