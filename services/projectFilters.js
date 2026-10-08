@@ -4,7 +4,7 @@ export const BUDGET_MIN = 2000000;
 export const BUDGET_MAX = 50000000;
 export const AREA_MIN = 0;
 export const AREA_MAX = 5000;
-export const LOCATION_RADIUS_KM = 10;
+export const LOCATION_RADIUS_KM = 5;
 
 export const normalizeFilterText = (value) => String(value ?? '').toLowerCase().trim();
 

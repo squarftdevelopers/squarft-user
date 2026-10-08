@@ -133,10 +133,10 @@ test('combines property, location, and BHK searches with raw rupee budgets', () 
   expect(ids(applyProjectFilters(list, { ...defaultFilter, searchQuery: 'plot in pune under 7000000' }))).toEqual(['pune-plot']);
 });
 
-test('filters near selected location coordinates within default radius', () => {
+test('filters near selected location coordinates within 5 km', () => {
   const selected = { latitude: 22.7533, longitude: 75.8937 };
   expect(calculateDistanceKm(selected.latitude, selected.longitude, projects[0].latitude, projects[0].longitude)).toBeLessThan(1);
-  expect(ids(applyProjectFilters(projects, { ...defaultFilter, locationCoordinates: selected }))).toEqual(['aurum', 'emerald', 'metro']);
+  expect(ids(applyProjectFilters(projects, { ...defaultFilter, locationCoordinates: selected }))).toEqual(['aurum', 'emerald']);
 });
 
 test('parses combined property, BHK, location, budget, area, and amenity keywords', () => {
@@ -178,11 +178,12 @@ test('branch selection excludes other branches in the same city and unassigned p
   expect(applyProjectFilters(list, { branchId: 'branch-a', searchQuery: 'does-not-exist' })).toEqual([]);
 });
 
-test('current location uses the map picker radius and excludes missing coordinates', () => {
+test('location filter keeps projects within 5 km and excludes missing coordinates', () => {
   const list = [
     { id: 'near', latitude: 22.72, longitude: 75.86 },
-    { id: 'far', latitude: 23.0, longitude: 75.86 },
+    { id: 'within-radius', latitude: 22.76, longitude: 75.86 },
+    { id: 'outside-radius', latitude: 22.78, longitude: 75.86 },
     { id: 'unknown' },
   ];
-  expect(applyProjectFilters(list, { locationCoordinates: { latitude: 22.72, longitude: 75.86 } }).map((p) => p.id)).toEqual(['near']);
+  expect(applyProjectFilters(list, { locationCoordinates: { latitude: 22.72, longitude: 75.86 } }).map((p) => p.id)).toEqual(['near', 'within-radius']);
 });

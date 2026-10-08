@@ -9,7 +9,6 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useSelector, useDispatch } from "react-redux";
 import { addSiteVisit, removeSiteVisit } from "../../store/slices/propertiesSlice";
 import { fetchVisitListThunk } from "../../store/slices/visitSlice";
-import { propertyApi } from "../../services/propertyApi";
 import PropertyDetailModal from "../../components/projectDetail/PropertyDetailModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
 import { formatProjectPriceAmount, maskProjectName } from "../../services/projectDisplay";
@@ -121,6 +120,9 @@ const getVisitPropertyId = (visit) => {
 
 const GOOGLE_MAPS_DIRECTIONS_URL = "https://www.google.com/maps/dir/";
 const LOCATION_TIMEOUT_MS = 12000;
+const VISIT_DIRECTIONS_DESTINATION = {
+  coordinates: { latitude: 22.7443, longitude: 75.8918 },
+};
 
 const withTimeout = (promise, timeoutMessage) =>
   Promise.race([
@@ -129,24 +131,6 @@ const withTimeout = (promise, timeoutMessage) =>
       setTimeout(() => reject(new Error(timeoutMessage)), LOCATION_TIMEOUT_MS);
     }),
   ]);
-
-const getApiList = (response) => {
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.data)) return response.data;
-  return [];
-};
-
-const getDestinationLabel = (visit, property) => {
-  const parts = [
-    property?.area || visit?.area || visit?.location,
-    property?.city || visit?.city,
-    property?.pincode || visit?.pincode,
-  ]
-    .map((part) => String(part || "").trim())
-    .filter(Boolean);
-
-  return [...new Set(parts)].join(", ");
-};
 
 const buildGoogleMapsDirectionsUrl = ({ origin, destination }) => {
   const destinationValue = destination.coordinates
@@ -314,37 +298,11 @@ export default function Visit() {
 
   const [selectedForBooking, setSelectedForBooking] = useState([]);
 
-  const resolveVisitDestination = useCallback(async (visit) => {
-    const propertyId = getVisitPropertyId(visit);
-    let property = null;
-
-    if (propertyId) {
-      try {
-        const response = await propertyApi.getPropertyList(token, { limit: 500 });
-        property = getApiList(response).find((item) => String(item?.id) === String(propertyId)) || null;
-      } catch (error) {
-        console.log("Directions property lookup failed:", error?.message || error);
-      }
-    }
-
-    const label = getDestinationLabel(visit, property);
-
-    if (!label) {
-      throw new Error("This property does not have a destination location.");
-    }
-
-    // Do not expose a project's exact stored coordinates to external map apps.
-    // Google Maps receives only the broader area/city/pincode destination.
-    return { coordinates: null, label };
-  }, [token]);
-
   const handleOpenDirections = useCallback(async (visit) => {
     if (directionsVisitId) return;
 
     setDirectionsVisitId(visit.id);
     try {
-      const destination = await resolveVisitDestination(visit);
-
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status !== "granted") {
         Alert.alert(
@@ -366,7 +324,10 @@ export default function Visit() {
         latitude: currentPosition.coords.latitude,
         longitude: currentPosition.coords.longitude,
       };
-      const mapsUrl = buildGoogleMapsDirectionsUrl({ origin, destination });
+      const mapsUrl = buildGoogleMapsDirectionsUrl({
+        origin,
+        destination: VISIT_DIRECTIONS_DESTINATION,
+      });
 
       await Linking.openURL(mapsUrl);
     } catch (error) {
@@ -377,7 +338,7 @@ export default function Visit() {
     } finally {
       setDirectionsVisitId(null);
     }
-  }, [directionsVisitId, resolveVisitDestination]);
+  }, [directionsVisitId]);
 
   useEffect(() => {
     // Keep selectedForBooking in sync if properties are removed
