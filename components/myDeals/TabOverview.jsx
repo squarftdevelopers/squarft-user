@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { View, Text } from 'react-native';
+import { maskProjectName } from '../../services/projectDisplay';
 
 const formatValue = (val) => {
     const num = Number(val);
@@ -21,7 +22,7 @@ const TabOverview = memo(function TabOverview({ deal = {} }) {
         <View className="bg-white rounded-[12px] p-4 border border-[#F3F4F6]"
             style={{ elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 }}>
             <Text className="text-[14px] font-manrope-bold text-[#111827] mb-3">Deal Summary</Text>
-            <Row label="Property" value={deal.property_title} />
+            <Row label="Property" value={maskProjectName(deal.property_title)} />
             <Row label="City" value={deal.city} />
             <Row label="Area" value={deal.area} />
             <Row label="Total Value" value={formatValue(deal.total_value)} />

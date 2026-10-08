@@ -10,6 +10,7 @@ import { fetchProjectListThunk } from "../../store/slices/projectSlice";
 import { PropertyCardSkeleton } from "../SkeletonLoader";
 import ReraStatusBadge, { isReraApproved } from "../ReraStatusBadge";
 import ImageLightbox from "../ImageLightbox";
+import { maskProjectName } from "../../services/projectDisplay";
 import {
   getSavedItemDetails,
   getSavedItemId,
@@ -116,7 +117,9 @@ const SavedTabContent = ({ refreshing = false, onRefresh }) => {
                 </Text>
                 <View className="flex-row items-center mb-1">
                   <Text className="text-[15px] font-manrope-extrabold text-[#111827] flex-1" numberOfLines={1}>
-                    {details.title || details.name || "Unnamed Asset"}
+                    {isPropertyType
+                      ? (details.title || details.name || "Unnamed Asset")
+                      : (maskProjectName(details.title || details.name) || "Unnamed Asset")}
                   </Text>
                   <ReraStatusBadge approved={isReraApproved(details)} className="ml-2" />
                 </View>

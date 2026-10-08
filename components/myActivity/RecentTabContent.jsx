@@ -7,7 +7,7 @@ import { router } from "expo-router";
 import { selectRecentProjects, selectRecentProjectsLoading } from "../../store/slices/recentProjectsSlice";
 import { PropertyCardSkeleton } from "../SkeletonLoader";
 import { fetchProjectListThunk } from "../../store/slices/projectSlice";
-import { buildProjectAddress, buildProjectPrice } from "../../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, maskProjectName } from "../../services/projectDisplay";
 
 const toImageSource = (value) => {
   if (typeof value === "string" && value.trim()) return { uri: value };
@@ -169,7 +169,7 @@ const RecentTabContent = ({ refreshing = false, onRefresh }) => {
                   className="text-[15px] font-manrope-extrabold text-[#111827]" 
                   numberOfLines={1}
                 >
-                  {title}
+                  {maskProjectName(title)}
                 </Text>
               </View>
 

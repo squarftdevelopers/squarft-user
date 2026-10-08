@@ -18,6 +18,7 @@ import { Audio } from "expo-av";
 import { Stack, useRouter } from "expo-router";
 import { useDispatch, useSelector } from "react-redux";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { maskProjectName } from "../../services/projectDisplay";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { chatApi } from "../../services/chatApi";
 import { fetchProfileThunk } from "../../store/slices/authSlice";
@@ -425,7 +426,7 @@ export default function ChatBot() {
 
   const renderProperty = (property) => (
     <View key={property.id || property.name} className="mt-3 rounded-xl border border-[#E5E7EB] bg-[#FAFAFF] p-3">
-      <Text className="text-[13px] font-manrope-extrabold text-[#111827]">{property.name || "Property"}</Text>
+      <Text className="text-[13px] font-manrope-extrabold text-[#111827]">{maskProjectName(property.name) || "Property"}</Text>
       <View className="mt-2 flex-row flex-wrap gap-2">
         {!!property.location && (
           <Text className="rounded-md bg-white px-2 py-1 text-[10px] font-manrope-bold text-[#6B7280]">

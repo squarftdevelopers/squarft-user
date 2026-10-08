@@ -9,6 +9,7 @@ import DetailFooter from "./DetailFooter";
 import ReraStatusBadge, { isReraApproved } from "../ReraStatusBadge";
 import SimpleBottomSheet from "../SimpleBottomSheet";
 import EmptyPropertySection from "../EmptyPropertySection";
+import { maskProjectName } from "../../services/projectDisplay";
 
 const POSSESSION_FILTERS = ["All", "In 3 yrs", "Ready To Move", "Under Construction"];
 
@@ -354,7 +355,7 @@ export default function BuilderModal({ visible, onClose, project }) {
                                     <Text className="text-[16px] font-manrope-extrabold text-[#111827] mb-1" numberOfLines={1}>
                                         {priceText}
                                     </Text>
-                                    <Text className="text-[14px] font-manrope-bold text-gray-800 mb-1" numberOfLines={1}>{p.name}</Text>
+                                    <Text className="text-[14px] font-manrope-bold text-gray-800 mb-1" numberOfLines={1}>{maskProjectName(p.name)}</Text>
                                     <Text className="text-[12px] font-manrope-semibold text-gray-500 mb-1" numberOfLines={1}>{bhkText}</Text>
                                     <Text className="text-[11px] text-gray-400 mb-3 leading-4" numberOfLines={2}>{addressText}</Text>
                                     <ReraStatusBadge

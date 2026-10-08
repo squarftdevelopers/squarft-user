@@ -28,6 +28,7 @@ import DetailFooter from "../../components/projectDetail/DetailFooter";
 import ReraStatusBadge from "../../components/ReraStatusBadge";
 import BuilderModal from "../../components/projectDetail/BuilderModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
+import { maskProjectName } from "../../services/projectDisplay";
 
 const frame260 = require("../../assets/images/Frame 26086854.png");
 const frame871 = require("../../assets/images/Frame 26086871.png");
@@ -718,7 +719,7 @@ export default function ProjectDetail() {
           }}
         >
           <Text className="text-[16px] font-manrope-extrabold text-gray-900 mb-2">
-            {project.name}
+            {maskProjectName(project.name)}
           </Text>
 
           <View className="flex-row items-start gap-3 mb-3.5">

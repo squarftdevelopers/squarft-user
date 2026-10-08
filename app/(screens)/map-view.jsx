@@ -23,7 +23,7 @@ import {
     toggleFavourite,
     unsavePropertyThunk,
 } from "../../store/slices/propertiesSlice";
-import { buildProjectAddress, buildProjectPrice } from "../../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, maskProjectName } from "../../services/projectDisplay";
 import { GeocodingService } from "../../services/geocoding/GeocodingService";
 import { processProjectsForMap } from "../../services/geocoding/processor";
 import { getFallbackCoordinate } from "../../services/geocoding/fallback";
@@ -380,7 +380,7 @@ function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, coord
             <View style={{ padding: 10 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
                     <Text style={{ flex: 1, fontSize: 13, fontWeight: "800", color: "#111827" }} numberOfLines={1}>
-                        {getProjectTitle(item)}
+                        {maskProjectName(getProjectTitle(item))}
                     </Text>
                     {!isLandmark && (
                         <Text style={{ fontSize: 12, fontWeight: "800", color: "#4A43EC" }} numberOfLines={1}>

@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { buildProjectAddress, buildProjectPrice } from "../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, maskProjectName } from "../services/projectDisplay";
 import ProgressiveImage from './ProgressiveImage';
 
 const luxuryApartments = require("../assets/images/Luxury Apartments.png");
@@ -75,7 +75,7 @@ export default function FeaturedCard({ item, onToggleFav, showBookVisit = false 
                 )}
             </View>
             <View className="px-4 py-4">
-                <Text className="text-[15px] font-inter-bold text-[#1F2937] mb-0.5">{title}</Text>
+                <Text className="text-[15px] font-inter-bold text-[#1F2937] mb-0.5">{maskProjectName(title)}</Text>
                 <Text className="text-[12px] font-inter-regular text-[#6B7280] mb-2" numberOfLines={1}>{location}</Text>
                 <View className="flex-row items-center justify-between">
                     <View>

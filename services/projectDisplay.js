@@ -6,6 +6,12 @@ export function cleanProjectText(value) {
     return text;
 }
 
+export function maskProjectName(value) {
+    const name = cleanProjectText(value);
+    if (!name) return '';
+    return `${name.slice(0, 4)}****`;
+}
+
 const firstValue = (...values) => values.find((value) => {
     if (value === null || value === undefined || value === '') return false;
     return cleanProjectText(value) !== '';

@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchDealById, clearCurrentDeal } from "../../../store/slices/dealsSlice";
+import { maskProjectName } from "../../../services/projectDisplay";
 
 import TabTimeline from "../../../components/myDeals/TabTimeline";
 import TabPayments from "../../../components/myDeals/TabPayments";
@@ -160,7 +161,7 @@ export default function DealDetails() {
 
                     <View className="mb-4 relative z-10">
                         <Text className="text-[20px] font-manrope-bold text-white mb-1 leading-[30px]">
-                            {deal.property_title}
+                            {maskProjectName(deal.property_title)}
                         </Text>
                         <Text className="text-[12px] font-manrope-medium text-white/80">
                             📍 {deal.city}{deal.area ? `, ${deal.area}` : ""}

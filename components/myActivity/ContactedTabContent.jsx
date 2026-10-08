@@ -8,7 +8,7 @@ import EmptyState from "./EmptyState";
 import { fetchContactedPropertiesThunk } from "../../store/slices/propertiesSlice";
 import { PropertyCardSkeleton } from "../SkeletonLoader";
 import ReraStatusBadge, { isReraApproved } from "../ReraStatusBadge";
-import { buildProjectPrice } from "../../services/projectDisplay";
+import { buildProjectPrice, maskProjectName } from "../../services/projectDisplay";
 
 const STATUS_COLORS = {
   pending: { bg: "#FEF3C7", text: "#92400E" },
@@ -130,7 +130,7 @@ const ContactedTabContent = ({ refreshing = false, onRefresh }) => {
                 </Text>
                 <View className="flex-row items-center mb-1">
                   <Text className="text-[15px] font-manrope-extrabold text-[#111827] flex-1" numberOfLines={1}>
-                    {title}
+                    {maskProjectName(title)}
                   </Text>
                   <ReraStatusBadge approved={isReraApproved(property)} className="ml-2" />
                 </View>

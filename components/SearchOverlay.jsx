@@ -14,6 +14,7 @@ import { openFilter, setSearchQuery } from "../store/slices/filterSlice";
 import { getTrendingSearchesThunk, getTrendingLocationsThunk, getSearchHistoryThunk, saveSearchHistoryThunk, deleteSearchHistoryThunk, clearAllSearchHistoryThunk, searchPropertiesAndProjectsThunk } from "../store/slices/searchSlice";
 import { fetchNearbyProjectsThunk, fetchProjectListThunk } from "../store/slices/projectSlice";
 import { applyProjectFilters } from "../services/projectFilters";
+import { maskProjectName } from "../services/projectDisplay";
 
 
 
@@ -192,7 +193,7 @@ function SuggestionItem({ item, index, onPress }) {
             <TouchableOpacity onPress={() => onPress(item)} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 13, gap: 12, backgroundColor: '#fff' }}>
                 <FontAwesome name="search" size={14} color="#9CA3AF" />
                 <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, color: '#111827' }}>{item.title || 'Untitled listing'}</Text>
+                    <Text style={{ fontSize: 14, color: '#111827' }}>{maskProjectName(item.title) || 'Untitled listing'}</Text>
                     {location ? <Text style={{ marginTop: 2, fontSize: 12, color: '#9CA3AF' }}>{location}</Text> : null}
                 </View>
                 <MaterialCommunityIcons name="arrow-top-left" size={16} color="#9CA3AF" />

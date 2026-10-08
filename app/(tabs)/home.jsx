@@ -35,7 +35,7 @@ import { fetchFeaturedProjectsThunk, fetchProjectListThunk } from "../../store/s
 import { LinearGradient } from "expo-linear-gradient";
 import { RecommendedProjectsSkeleton, FeaturedProjectsSkeleton, ProjectInFocusSkeleton, HighGrowthLocalitiesSkeleton, Shimmer } from "../../components/SkeletonLoader";
 import ProgressiveImage from "../../components/ProgressiveImage";
-import { buildProjectAddress, buildProjectPrice } from "../../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, maskProjectName } from "../../services/projectDisplay";
 import { useRefetchOnForeground } from "../../hooks/useRefetchOnForeground";
 import { applyProjectFilters, hasActiveProjectFilters } from "../../services/projectFilters";
 import EmptyPropertySection from "../../components/EmptyPropertySection";
@@ -129,7 +129,7 @@ function RecommendedCard({ item, onToggleFav, onToggleSeen, onToggleContacted, o
       </View>
       <View className="px-1 pt-2 pb-2">
         <Text className="text-[12px] font-manrope-extrabold text-gray-900" numberOfLines={1}>
-          {item.name || item.title || item.type}
+          {maskProjectName(item.name || item.title || item.type)}
         </Text>
         {!!item.price && (
           <Text className="mt-1 text-[12px] font-bold text-[#4A43EC]" numberOfLines={1}>
@@ -755,7 +755,7 @@ export default function Home() {
                 </View>
                 <View className="absolute bottom-4 left-4 right-4">
                   <Text className="text-[12px] font-public-bold text-[#e0733d] tracking-widest mb-1">{project.tag}</Text>
-                  <Text className="text-[20px] font-public-bold text-white mb-0" numberOfLines={1}>{project.title}</Text>
+                  <Text className="text-[20px] font-public-bold text-white mb-0" numberOfLines={1}>{maskProjectName(project.title)}</Text>
                   <Text className="text-[14px] font-public-regular text-[#CBD5E1]" numberOfLines={1}>{project.subtitle}</Text>
                 </View>
               </TouchableOpacity>
@@ -811,7 +811,7 @@ export default function Home() {
                 </View>
                 <View className="flex-1 px-4 self-stretch justify-around">
                   <View>
-                    <Text className="text-[16px] font-public-bold text-[#0F172A]" numberOfLines={1}>{item.title}</Text>
+                    <Text className="text-[16px] font-public-bold text-[#0F172A]" numberOfLines={1}>{maskProjectName(item.title)}</Text>
                     <Text className="text-[12px] font-public-regular text-gray-500" numberOfLines={1}>{item.location}</Text>
                     {item.priceRange && (
                       <Text className="text-[13px] font-manrope-bold text-[#6C3BFF] mt-1">{item.priceRange}</Text>

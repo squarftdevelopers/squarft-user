@@ -6,6 +6,7 @@ import BuilderModal from "./BuilderModal";
 import PropertyDetailModal from "./PropertyDetailModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
 import EmptyPropertySection from "../EmptyPropertySection";
+import { maskProjectName } from "../../services/projectDisplay";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.55;
@@ -292,7 +293,7 @@ export default function Overview({ project }) {
             </View>
             {/* About card */}
             {project.description ? <View className="mx-6 mb-3 mt-4 bg-white rounded-2xl p-4" style={cardShadow}>
-                <Text className="text-[15px] font-manrope-bold text-[#1A1A1A] mt-1 mb-3">About {project.name}</Text>
+                <Text className="text-[15px] font-manrope-bold text-[#1A1A1A] mt-1 mb-3">About {maskProjectName(project.name)}</Text>
                 {[project.description].map((point, i) => (
                     <View key={i} className="flex-row gap-2 mb-2">
                         <Text className="text-[#5E23DC] text-[18px] -top-[1px]">•</Text>

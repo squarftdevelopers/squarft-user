@@ -6,6 +6,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyDeals } from "../../../store/slices/dealsSlice";
 import EmptyPropertySection from "../../../components/EmptyPropertySection";
+import { maskProjectName } from "../../../services/projectDisplay";
 
 const Shimmer = ({ style, className }) => {
     const anim = useRef(new Animated.Value(0)).current;
@@ -108,7 +109,7 @@ const DealCard = memo(function DealCard({ deal, animKey, onPress }) {
         >
             <View className="flex-row items-center mb-2.5">
                 <View className="flex-1">
-                    <Text className="text-[14px] font-manrope-bold text-[#111827] mb-0.5">{deal.property_title}</Text>
+                    <Text className="text-[14px] font-manrope-bold text-[#111827] mb-0.5">{maskProjectName(deal.property_title)}</Text>
                     <Text className="text-[11px] font-manrope-medium text-[#6B7280]">{deal.city}{deal.area ? `, ${deal.area}` : ''}</Text>
                 </View>
                 <View className={`px-2 py-[2px] rounded-full ${isActive ? 'bg-[#EAF8EE]' : 'bg-[#FFF8E6]'}`}>

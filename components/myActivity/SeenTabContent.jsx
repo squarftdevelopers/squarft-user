@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { selectSeenProjects } from '../../store/slices/projectViewTrackingSlice';
 import { fetchProjectListThunk } from '../../store/slices/projectSlice';
-import { buildProjectAddress, buildProjectPrice } from '../../services/projectDisplay';
+import { buildProjectAddress, buildProjectPrice, maskProjectName } from '../../services/projectDisplay';
 
 const toImageSource = (value) => {
   if (typeof value === 'string' && value.trim()) return { uri: value };
@@ -104,7 +104,7 @@ export default function SeenTabContent({ refreshing = false, onRefresh }) {
           <View className="flex-1 p-3 justify-between">
             <View>
               <Text className="text-[15px] font-manrope-bold text-gray-900" numberOfLines={1}>
-                {item.title}
+                {maskProjectName(item.title)}
               </Text>
               <Text className="text-[12px] text-gray-500 mt-1" numberOfLines={1}>
                 {item.location}

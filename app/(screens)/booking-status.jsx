@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { StatusBar } from "expo-status-bar";
 import SuccessCheck from "../../components/SuccessCheck";
+import { maskProjectName } from "../../services/projectDisplay";
 import { Audio } from 'expo-av';
 
 const FALLBACK_IMAGE = { uri: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" };
@@ -87,7 +88,7 @@ export default function BookingStatus() {
           Booking Successful
         </Text>
         <Text className="text-center text-[13px] font-manrope-medium text-[#6B7280] leading-[18px] mb-10">
-          Your reservation at {propertyName} has been confirmed.{"\n"}A confirmation email is on its way.
+          Your reservation at {maskProjectName(propertyName)} has been confirmed.{"\n"}A confirmation email is on its way.
         </Text>
 
         {/* Property Card(s) */}

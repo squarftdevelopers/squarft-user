@@ -12,7 +12,7 @@ import { fetchVisitListThunk } from "../../store/slices/visitSlice";
 import { propertyApi } from "../../services/propertyApi";
 import PropertyDetailModal from "../../components/projectDetail/PropertyDetailModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
-import { formatProjectPriceAmount } from "../../services/projectDisplay";
+import { formatProjectPriceAmount, maskProjectName } from "../../services/projectDisplay";
 import { useRefetchOnForeground } from "../../hooks/useRefetchOnForeground";
 
 const siteVisitBanner = require("../../assets/images/sitevisit_banner.png");
@@ -511,7 +511,7 @@ export default function Visit() {
                                 {getProjectPropertyCardConfig(visit.variantDetails || visit) || visit.variantDetails?.title || visit.variant || typeLabel || visit.title || visit.name || "Property"}
                               </Text>
                               <Text className="text-[10.5px] font-manrope text-gray-500" numberOfLines={1}>
-                                {visit.projectName || visit.title || visit.name}
+                                {maskProjectName(visit.projectName || visit.title || visit.name)}
                               </Text>
                               {visit.location ? (
                                 <Text className="text-[#9CA3AF] text-[9.5px] font-manrope" numberOfLines={1}>
@@ -598,7 +598,7 @@ export default function Visit() {
                             <>
                               <View className="w-[1px] h-3 bg-gray-300" />
                               <Text className="text-[11px] font-manrope text-gray-600 flex-shrink" numberOfLines={1}>
-                                {visit.projectName}
+                                {maskProjectName(visit.projectName)}
                               </Text>
                             </>
                           )}
@@ -710,7 +710,7 @@ export default function Visit() {
                               <>
                                 <View className="w-[1px] h-3 bg-gray-300" />
                                 <Text className="text-[11px] font-manrope text-gray-600 flex-shrink" numberOfLines={1}>
-                                  {visit.projectName}
+                                  {maskProjectName(visit.projectName)}
                                 </Text>
                               </>
                             )}

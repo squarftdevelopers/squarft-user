@@ -14,6 +14,7 @@ import PropertyDetailModal from "../../components/projectDetail/PropertyDetailMo
 import { propertyApi } from "../../services/propertyApi";
 import { projectApi } from "../../services/projectApi";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
+import { maskProjectName } from "../../services/projectDisplay";
 
 const FALLBACK_PROPERTY_IMAGE = { uri: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" };
 const VISIT_DURATION_MINUTES = 90;
@@ -857,7 +858,7 @@ export default function BookSiteVisit() {
                       {getVisitTitleLabel(visit) || "Property"}
                     </Text>
                     <Text className="text-[11px] font-manrope text-gray-500 mb-0.5" numberOfLines={1}>
-                      {visit.projectName || visit.title || visit.name}
+                      {maskProjectName(visit.projectName || visit.title || visit.name)}
                     </Text>
                     {visit.location ? (
                       <View className="flex-row items-center">

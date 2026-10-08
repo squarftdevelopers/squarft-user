@@ -11,7 +11,7 @@ import { openBudgetFilter, setSearchQuery, clearNonTypeFilters, clearPropertyTyp
 import { fetchFeaturedProjectsThunk, fetchNearbyProjectsThunk, fetchProjectListThunk, setMapProjects } from "../../store/slices/projectSlice";
 import EmptyPropertySection from "../../components/EmptyPropertySection";
 import { fetchHighGrowthProjectsThunk } from "../../store/slices/propertiesSlice";
-import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount } from "../../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount, maskProjectName } from "../../services/projectDisplay";
 import ReraStatusBadge, { isReraApproved } from "../../components/ReraStatusBadge";
 import { applyProjectFilters } from "../../services/projectFilters";
 
@@ -375,7 +375,7 @@ function ProjectCard({ item }) {
                     </View>
 
                     <View className="flex-row items-center mb-1 gap-2">
-                        <Text className="text-[15px] font-manrope-extrabold text-[#111827] flex-1" numberOfLines={1}>{title}</Text>
+                        <Text className="text-[15px] font-manrope-extrabold text-[#111827] flex-1" numberOfLines={1}>{maskProjectName(title)}</Text>
                         {rera ? <ReraStatusBadge approved /> : null}
                     </View>
 
