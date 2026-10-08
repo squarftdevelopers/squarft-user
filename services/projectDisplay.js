@@ -14,6 +14,35 @@ export function maskProjectName(value) {
 
 export const maskBuilderName = maskProjectName;
 
+const projectImageUrl = (image) => {
+    if (typeof image === 'string') return cleanProjectText(image);
+    if (!image || typeof image !== 'object') return '';
+    if (image.media_type && image.media_type !== 'image') return '';
+    return cleanProjectText(
+        image.url
+        || image.uri
+        || image.file_url
+        || image.image_url
+        || image.media_url
+        || image.thumbnail_url
+    );
+};
+
+export function getProjectImageUrls(project = {}) {
+    const collections = [project.media, project.images, project.projectImages, project.project_images]
+        .flatMap((items) => Array.isArray(items) ? items : []);
+    const candidates = [
+        project.cover_image_url,
+        project.cover_image,
+        project.image_url,
+        project.image,
+        project.imageMain,
+        ...collections,
+    ];
+
+    return [...new Set(candidates.map(projectImageUrl).filter(Boolean))];
+}
+
 const firstValue = (...values) => values.find((value) => {
     if (value === null || value === undefined || value === '') return false;
     return cleanProjectText(value) !== '';

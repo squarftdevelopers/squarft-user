@@ -185,17 +185,22 @@ export const parseProjectKeywordSearch = (value = '') => {
   const bhkMatch = query.match(/\b([1-5])\s*\+?\s*(?:bhk|bedroom|bed)\b/i);
   const areaMatch = query.match(/\b([\d,]+)\s*(?:sq\.?\s*(?:ft|feet)|square\s*(?:ft|feet|foot))\b/i);
   const areaSqft = areaMatch ? Number(String(areaMatch[1]).replace(/,/g, '')) : null;
-  const amountPattern = '(?:₹\\s*)?([\\d,.]+)\\s*(l|lac|lakh|lakhs|cr|crore|crores)\\b';
-  const budgetMatch = query.match(new RegExp(`\\b(?:under|below|upto|up to|less than|within)\\s*${amountPattern}`, 'i'))
-    || query.match(new RegExp(`\\b${amountPattern}`, 'i'));
-  const minimumBudgetMatch = query.match(new RegExp(`\\b(?:above|over|more than)\\s*${amountPattern}`, 'i'));
+  const currencyPattern = '(?:(?:₹|rs\\.?|inr)\\s*)?';
+  const amountWithUnitPattern = `${currencyPattern}([\\d,.]+)\\s*(l|lac|lakh|lakhs|cr|crore|crores)\\b`;
+  const amountWithOptionalUnitPattern = `${currencyPattern}([\\d,.]+)\\s*(l|lac|lakh|lakhs|cr|crore|crores)?\\b`;
+  const maximumBudgetPrefix = '(?:under|below|upto|up to|less than|within)';
+  const minimumBudgetPrefix = '(?:above|over|more than)';
+  const budgetMatch = query.match(new RegExp(`\\b${maximumBudgetPrefix}\\s*${amountWithOptionalUnitPattern}`, 'i'))
+    || query.match(new RegExp(`\\b${amountWithUnitPattern}`, 'i'));
+  const minimumBudgetMatch = query.match(new RegExp(`\\b${minimumBudgetPrefix}\\s*${amountWithOptionalUnitPattern}`, 'i'));
   const maxBudget = budgetMatch ? parseIndianAmount(budgetMatch[1], budgetMatch[2]) : null;
   const minBudget = minimumBudgetMatch ? parseIndianAmount(minimumBudgetMatch[1], minimumBudgetMatch[2]) : null;
 
   let remaining = query
     .replace(/\b[1-5]\s*\+?\s*(?:bhk|bedroom|bed)\b/gi, ' ')
     .replace(/\b[\d,]+\s*(?:sq\.?\s*(?:ft|feet)|square\s*(?:ft|feet|foot))\b/gi, ' ')
-    .replace(new RegExp(`\\b(?:under|below|upto|up to|less than|within|above|over|more than)?\\s*${amountPattern}`, 'gi'), ' ');
+    .replace(new RegExp(`\\b(?:${maximumBudgetPrefix}|${minimumBudgetPrefix})\\s*${amountWithOptionalUnitPattern}`, 'gi'), ' ')
+    .replace(new RegExp(`\\b${amountWithUnitPattern}`, 'gi'), ' ');
   SEARCH_PROPERTY_TYPES.forEach(([, aliases]) => aliases.forEach((alias) => {
     remaining = remaining.replace(new RegExp(`\\b${alias.replace(/ /g, '\\s+')}\\b`, 'gi'), ' ');
   }));

@@ -109,6 +109,30 @@ test('filters by search query and text address', () => {
   expect(ids(applyProjectFilters(projects, { ...defaultFilter, address: 'Super Corridor' }))).toEqual(['metro']);
 });
 
+test('combines property, location, and BHK searches with raw rupee budgets', () => {
+  const punePlot = {
+    id: 'pune-plot',
+    city: 'Pune',
+    available_subtypes: ['plot'],
+    price_from: 6500000,
+    price_to: 8500000,
+  };
+  const list = [...projects, punePlot];
+
+  expect(parseProjectKeywordSearch('3bhk under 5000000')).toMatchObject({
+    bhk: '3',
+    maxBudget: 5000000,
+    terms: [],
+  });
+  expect(parseProjectKeywordSearch('properties in indore under 4,000,000')).toMatchObject({
+    maxBudget: 4000000,
+    terms: ['indore'],
+  });
+  expect(ids(applyProjectFilters(list, { ...defaultFilter, searchQuery: '3bhk under 5000000' }))).toEqual(['aurum']);
+  expect(ids(applyProjectFilters(list, { ...defaultFilter, searchQuery: 'properties in indore under 4000000' }))).toEqual(['metro']);
+  expect(ids(applyProjectFilters(list, { ...defaultFilter, searchQuery: 'plot in pune under 7000000' }))).toEqual(['pune-plot']);
+});
+
 test('filters near selected location coordinates within default radius', () => {
   const selected = { latitude: 22.7533, longitude: 75.8937 };
   expect(calculateDistanceKm(selected.latitude, selected.longitude, projects[0].latitude, projects[0].longitude)).toBeLessThan(1);

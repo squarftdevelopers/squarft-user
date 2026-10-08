@@ -11,9 +11,10 @@ import { openBudgetFilter, setSearchQuery, clearNonTypeFilters, clearPropertyTyp
 import { fetchFeaturedProjectsThunk, fetchNearbyProjectsThunk, fetchProjectListThunk, setMapProjects } from "../../store/slices/projectSlice";
 import EmptyPropertySection from "../../components/EmptyPropertySection";
 import { fetchHighGrowthProjectsThunk } from "../../store/slices/propertiesSlice";
-import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount, maskBuilderName, maskProjectName } from "../../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount, getProjectImageUrls, maskBuilderName, maskProjectName } from "../../services/projectDisplay";
 import ReraStatusBadge, { isReraApproved } from "../../components/ReraStatusBadge";
 import { applyProjectFilters } from "../../services/projectFilters";
+import ImageLightbox from "../../components/ImageLightbox";
 
 // Filter constants
 const BUDGET_MIN = 2000000;
@@ -329,11 +330,12 @@ function applyFilters(projects, filter) {
     return applyProjectFilters(projects, filter);
 }
 
-function ProjectCard({ item }) {
+function ProjectCard({ item, onOpenGallery }) {
     const title = item.name || item.title || item.project_name || 'Project';
     const location = item.display_location || buildProjectAddress(item) || cleanDisplayText(item.location || item.address);
     const price = item.display_price || buildProjectPrice(item);
-    const image = item.cover_image_url || item.cover_image || item.image_url || item.image;
+    const images = getProjectImageUrls(item);
+    const image = images[0];
     const developerName = getDeveloperName(item);
     const possessionLabel = getPossessionLabel(item);
     const avgPriceLabel = getAvgPricePerSqft(item);
@@ -346,7 +348,13 @@ function ProjectCard({ item }) {
             className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6 mx-4"
         >
             <TouchableOpacity activeOpacity={0.97} onPress={goToDetail}>
-                <View className="h-40 w-full relative bg-gray-200">
+                <Pressable
+                    disabled={!image}
+                    onPress={() => onOpenGallery(images)}
+                    className="h-40 w-full relative bg-gray-200"
+                    accessibilityRole={image ? "button" : undefined}
+                    accessibilityLabel={image ? `View ${images.length} project photos` : undefined}
+                >
                     {image
                         ? <Image source={{ uri: image }} className="w-full h-full" resizeMode="cover" />
                         : <View className="w-full h-full bg-gray-200 items-center justify-center">
@@ -358,7 +366,13 @@ function ProjectCard({ item }) {
                             <Text className="text-white text-[11px] font-manrope-extrabold" numberOfLines={1}>{maskBuilderName(developerName)}</Text>
                         </View>
                     ) : null}
-                </View>
+                    {images.length > 1 ? (
+                        <View className="absolute bottom-2 right-2 bg-black/65 px-2 py-1 rounded-md flex-row items-center">
+                            <Ionicons name="images-outline" size={12} color="#FFFFFF" />
+                            <Text className="text-white text-[10px] font-manrope-bold ml-1">View {images.length} Photos</Text>
+                        </View>
+                    ) : null}
+                </Pressable>
 
                 <View className="px-3 pt-3 pb-2">
                     <View className="flex-row items-center mb-1">
@@ -457,6 +471,7 @@ export default function PropertyListing() {
     const [bhkOpen, setBhkOpen] = useState(false);
     const [possessionOpen, setPossessionOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [galleryImages, setGalleryImages] = useState([]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -614,6 +629,11 @@ export default function PropertyListing() {
             <BudgetFilterModal />
             <BHKFilterModal visible={bhkOpen} onClose={() => setBhkOpen(false)} />
             <PossessionFilterModal visible={possessionOpen} onClose={() => setPossessionOpen(false)} />
+            <ImageLightbox
+                visible={galleryImages.length > 0}
+                images={galleryImages}
+                onClose={() => setGalleryImages([])}
+            />
 
             <Image
                 source={require('../../assets/images/blur (3).png')}
@@ -767,7 +787,7 @@ export default function PropertyListing() {
             <FlatList
                 data={sorted}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <ProjectCard item={item} />}
+                renderItem={({ item }) => <ProjectCard item={item} onOpenGallery={setGalleryImages} />}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
                 refreshControl={

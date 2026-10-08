@@ -13,7 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import * as Location from "expo-location";
 import Constants from "expo-constants";
 import { router, useLocalSearchParams } from "expo-router";
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Circle, Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { allProjects } from "../../data/projects";
@@ -35,6 +35,7 @@ const DEFAULT_REGION = {
     latitudeDelta: 0.12,
     longitudeDelta: 0.12,
 };
+const EXACT_LOCATION_PRIVACY_RADIUS_METERS = 200;
 const cardShadow = {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -266,11 +267,28 @@ function NativeProjectMap({ items, selectedId, userLocation, onSelectProject, ro
                 />
             )}
 
-            {items.map(({ project, coordinate }, index) => {
+            {items.map(({ project, coordinate, source }, index) => {
                 const id = getProjectId(project);
                 const selected = id === selectedId;
                 const title = getProjectTitle(project);
                 const address = getProjectAddress(project);
+                const showPrivacyArea = source === "stored" && !project?.isLandmark;
+
+                if (showPrivacyArea) {
+                    return (
+                        <Circle
+                            key={id || `project-area-${index}`}
+                            center={coordinate}
+                            radius={EXACT_LOCATION_PRIVACY_RADIUS_METERS}
+                            fillColor={selected ? "rgba(74, 67, 236, 0.28)" : "rgba(74, 67, 236, 0.16)"}
+                            strokeColor={selected ? "#4A43EC" : "#7772F2"}
+                            strokeWidth={selected ? 3 : 2}
+                            zIndex={selected ? 1000 : index + 1}
+                            tappable
+                            onPress={() => onSelectProject(project)}
+                        />
+                    );
+                }
 
                 return (
                     <Marker
@@ -338,7 +356,7 @@ const openNavigation = (coordinate, userLocation) => {
     });
 };
 
-function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, coordinate, onSelect, onToggleSave, onNavigate, isRouting, isLandmark }) {
+function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, isExactCoordinate, coordinate, onSelect, onToggleSave, onNavigate, isRouting, isLandmark }) {
     const imageSource = getImageSource(item);
 
     return (
@@ -391,7 +409,9 @@ function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, coord
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 }}>
                     <Ionicons name={hasCoordinate ? "location-outline" : "alert-circle-outline"} size={11} color={hasCoordinate ? "#64748B" : "#EF4444"} />
                     <Text style={{ flex: 1, fontSize: 11, color: hasCoordinate ? "#64748B" : "#EF4444" }} numberOfLines={1}>
-                        {hasCoordinate ? getProjectAddress(item) : "Exact map location missing"}
+                        {hasCoordinate
+                            ? (isExactCoordinate && !isLandmark ? `Approximate location within ${EXACT_LOCATION_PRIVACY_RADIUS_METERS} m` : getProjectAddress(item))
+                            : "Exact map location missing"}
                     </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -875,6 +895,7 @@ export default function MapViewScreen() {
                                     isSelected={id === activeSelectedId || id === selectedId}
                                     isSaved={savedProjects.includes(id)}
                                     hasCoordinate={hasCoordinate}
+                                    isExactCoordinate={geocodedItem?.source === 'stored'}
                                     coordinate={geocodedItem?.coordinate}
                                     isRouting={routingProjectId === id}
                                     isLandmark={isLandmarkView}

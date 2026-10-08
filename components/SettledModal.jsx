@@ -8,24 +8,29 @@ export function SettledModal({ visible, onShow, children, ...props }) {
     const [backdropVisible, setBackdropVisible] = useState(false);
     const progress = useRef(new Animated.Value(1)).current;
     const backdropOpacity = useRef(new Animated.Value(0)).current;
+    const activeAnimation = useRef(null);
 
     const animateOpen = () => {
+        activeAnimation.current?.stop();
         progress.setValue(1);
         backdropOpacity.setValue(0);
-        Animated.sequence([
+        activeAnimation.current = Animated.sequence([
             Animated.timing(progress, {
                 toValue: 0,
                 duration: 460,
                 easing: Easing.out(Easing.cubic),
-                useNativeDriver: true,
+                useNativeDriver: false,
             }),
             Animated.timing(backdropOpacity, {
                 toValue: 1,
                 duration: 160,
                 easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
+                useNativeDriver: false,
             }),
-        ]).start();
+        ]);
+        activeAnimation.current.start(() => {
+            activeAnimation.current = null;
+        });
     };
 
     useEffect(() => {
@@ -39,6 +44,8 @@ export function SettledModal({ visible, onShow, children, ...props }) {
         const frame = requestAnimationFrame(() => setMounted(false));
         return () => cancelAnimationFrame(frame);
     }, [visible]);
+
+    useEffect(() => () => activeAnimation.current?.stop(), []);
 
     return (
         <Modal

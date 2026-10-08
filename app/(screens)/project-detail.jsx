@@ -28,7 +28,7 @@ import DetailFooter from "../../components/projectDetail/DetailFooter";
 import ReraStatusBadge from "../../components/ReraStatusBadge";
 import BuilderModal from "../../components/projectDetail/BuilderModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
-import { maskBuilderName, maskProjectName } from "../../services/projectDisplay";
+import { getProjectImageUrls, maskBuilderName, maskProjectName } from "../../services/projectDisplay";
 
 const frame260 = require("../../assets/images/Frame 26086854.png");
 const frame871 = require("../../assets/images/Frame 26086871.png");
@@ -278,6 +278,107 @@ function toImageSource(value, fallback = null) {
   return fallback;
 }
 
+function getProjectMediaImages(project = {}) {
+  const media = [project.media, project.images, project.projectImages]
+    .flatMap((items) => Array.isArray(items) ? items : []);
+
+  return [...new Set(media
+    .filter((item) => !item?.media_type || item.media_type === 'image')
+    .map((item) => typeof item === 'string'
+      ? item
+      : item?.url || item?.uri || item?.file_url || item?.image_url || item?.media_url)
+    .filter(Boolean))];
+}
+
+function ProjectHeroCarousel({ images }) {
+  const scrollRef = useRef(null);
+  const indexRef = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const loopingImages = images.length > 1 ? [...images, images[0]] : images;
+  const imageKey = images.join('|');
+
+  useEffect(() => {
+    indexRef.current = 0;
+    setActiveIndex(0);
+    scrollRef.current?.scrollTo({ x: 0, animated: false });
+  }, [imageKey]);
+
+  useEffect(() => {
+    if (images.length <= 1) return undefined;
+
+    const interval = setInterval(() => {
+      const nextIndex = indexRef.current + 1;
+      indexRef.current = nextIndex;
+      scrollRef.current?.scrollTo({ x: nextIndex * width, animated: true });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  const handleMomentumEnd = (event) => {
+    const pageIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+
+    if (pageIndex === images.length && images.length > 1) {
+      indexRef.current = 0;
+      setActiveIndex(0);
+      requestAnimationFrame(() => scrollRef.current?.scrollTo({ x: 0, animated: false }));
+      return;
+    }
+
+    indexRef.current = pageIndex;
+    setActiveIndex(pageIndex);
+  };
+
+  return (
+    <View style={{ width, height: 380, backgroundColor: '#E5E7EB' }}>
+      {loopingImages.length > 0 ? (
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          bounces={false}
+          decelerationRate="fast"
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleMomentumEnd}
+          scrollEventThrottle={16}
+        >
+          {loopingImages.map((uri, imageIndex) => (
+            <Image
+              key={`${uri}-${imageIndex}`}
+              source={{ uri }}
+              style={{ width, height: 380 }}
+              resizeMode="cover"
+            />
+          ))}
+        </ScrollView>
+      ) : (
+        <View className="w-full h-full items-center justify-center">
+          <Ionicons name="image-outline" size={42} color="#9CA3AF" />
+        </View>
+      )}
+
+      {images.length > 1 ? (
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', bottom: 106, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+        >
+          {images.map((_, dotIndex) => (
+            <View
+              key={`project-image-indicator-${dotIndex}`}
+              style={{
+                width: activeIndex === dotIndex ? 18 : 6,
+                height: 6,
+                borderRadius: 999,
+                backgroundColor: activeIndex === dotIndex ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
+              }}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function cleanText(value) {
   const text = String(value ?? '').replace(/\s+/g, ' ').trim();
   if (!text || ['none', 'null', 'undefined'].includes(text.toLowerCase())) return '';
@@ -499,6 +600,7 @@ export default function ProjectDetail() {
     || base.cover_image
     || base.image
     || base.image_url;
+  const projectImages = getProjectMediaImages(activeApiProject || {});
   const currentBuilderMatchesProject = currentBuilder?.id
     && projectOrganisationId
     && String(currentBuilder.id) === String(projectOrganisationId);
@@ -570,12 +672,8 @@ export default function ProjectDetail() {
       developerId: projectOrganisationId || base.developerId,
       imageMain: toImageSource(coverImage, base.imageMain),
       imageThumb: toImageSource(activeApiProject.thumbnail_url || activeApiProject.image_thumb, toImageSource(coverImage, base.imageThumb || base.imageMain)),
-      brochure: activeApiProject.brochure || (activeApiProject.brochure_url
-        ? {
-          url: activeApiProject.brochure_url,
-          label: activeApiProject.brochure_label,
-        }
-        : null) || base.brochure || null,
+      media: activeApiProject.media || base.media || [],
+      projectImages: projectImages.length > 0 ? projectImages : getProjectMediaImages(base),
       units: unitsValue,
       launchedIn: launchedValue ? formatProjectDate(launchedValue) : base.launchedIn,
       rating: apiRating,
@@ -600,6 +698,8 @@ export default function ProjectDetail() {
       builderLogo: toImageSource(base.organisation_logo_url || base.org_logo_url || base.builderLogo, base.imageMain),
       developerId: projectOrganisationId || base.developerId,
       imageMain: toImageSource(coverImage, base.imageMain),
+      media: base.media || [],
+      projectImages: getProjectMediaImages(base),
       possession: formatPossession(base.possession_date || base.possession),
       units: base.units,
       launchedIn: base.launchedIn,
@@ -615,6 +715,7 @@ export default function ProjectDetail() {
       ? similarProperties
       : projectList.filter(p => p.id !== id && (p.city === base.city || p.area === base.area)).slice(0, 5),
   };
+  const heroImages = getProjectImageUrls(project);
 
   const bhkConfig = normalizeConfigLabel(rawConfig)
     || normalizeConfigLabel(variantConfig)
@@ -682,11 +783,7 @@ export default function ProjectDetail() {
       >
         {/* Hero Image */}
         <View style={{ width, height: 380 }}>
-          <Image
-            source={project.imageMain}
-            className="w-full h-full"
-            resizeMode="cover"
-          />
+          <ProjectHeroCarousel images={heroImages} />
           <TouchableOpacity
             onPress={() => router.back()}
             className="absolute left-4 w-[38px] h-[38px] rounded-full bg-white/85 items-center justify-center"

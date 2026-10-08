@@ -1,5 +1,5 @@
-import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, ImageBackground, Linking } from "react-native";
-import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, ImageBackground } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import BuilderModal from "./BuilderModal";
@@ -89,17 +89,6 @@ function buildPropertyVariant(item) {
     };
 }
 
-function getBrochureUrl(brochure) {
-    if (!brochure) return "";
-    if (typeof brochure === "string") return brochure;
-    return brochure.url || brochure.file_url || brochure.download_url || "";
-}
-
-function getBrochureLabel(brochure) {
-    if (!brochure || typeof brochure === "string") return "Project Brochure";
-    return brochure.label || brochure.name || "Project Brochure";
-}
-
 const cardShadow = {
     shadowColor: "#6B7280",
     shadowOffset: { width: 0, height: 1 },
@@ -161,17 +150,6 @@ export default function Overview({ project }) {
         ? project.recommendedProperties.filter((item) => item.id !== project.id)
         : [];
     const similarApiItems = project.similarProperties?.length > 0 ? project.similarProperties : [];
-    const brochureUrl = getBrochureUrl(project.brochure);
-    const brochureLabel = getBrochureLabel(project.brochure);
-
-    const handleOpenBrochure = async () => {
-        if (!brochureUrl) return;
-        const supported = await Linking.canOpenURL(brochureUrl);
-        if (supported) {
-            await Linking.openURL(brochureUrl);
-        }
-    };
-
     return (
         <View>
 
@@ -301,25 +279,6 @@ export default function Overview({ project }) {
                     </View>
                 ))}
             </View> : null}
-
-            {/* Brochure download */}
-
-            {brochureUrl ? <TouchableOpacity
-                onPress={handleOpenBrochure}
-                style={{ backgroundColor: "#6C3BFF2A", borderColor: "#6C3BFF1A" }}
-                className=" mx-6 mb-6 mt-5 border rounded-2xl p-4 flex-row items-center gap-3"
-            >
-                <View className="w-16 h-16 bg-indigo-600 rounded-2xl items-center justify-center">
-                    <MaterialIcons name="picture-as-pdf" size={26} color="#fff" />
-                </View>
-                <View className="flex-1">
-                    <Text className="text-[15px] font-public-bold text-gray-900">{brochureLabel}</Text>
-                    <Text className="text-[11px] font-public-regular text-[#64748B] mt-0.5">
-                        PDF document
-                    </Text>
-                </View>
-                <Text className="text-[12px] font-public-bold text-[#4A43EC] tracking-wide">DOWNLOAD</Text>
-            </TouchableOpacity> : null}
 
             {/* Resale properties */}
             <ImageBackground

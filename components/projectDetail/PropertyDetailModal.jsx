@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     View,
     Text,
@@ -19,9 +19,8 @@ import {
     fetchSavedPropertiesThunk,
 } from "../../store/slices/propertiesSlice";
 import ZoomableImage from "./ZoomableImage";
+import ImageLightbox from "../ImageLightbox";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
-
-const naksha = require("../../assets/images/building_naksha.png");
 
 const { width } = Dimensions.get("window");
 
@@ -45,6 +44,26 @@ function formatCompactPrice(value) {
 function getImageSource(image, fallback) {
     if (typeof image === 'string' && image) return { uri: image };
     return image || fallback;
+}
+
+function getDynamicImageUrl(image) {
+    if (typeof image === 'string') return image.trim();
+    if (!image || typeof image !== 'object') return '';
+    return String(
+        image.uri || image.url || image.file_url || image.image_url ||
+        image.media_url || image.thumbnail_url || ''
+    ).trim();
+}
+
+function collectDynamicImages(source) {
+    if (!source) return [];
+    const collections = [source.images, source.media, source.property_media, source.gallery, source.photos];
+    const directImages = [source.cover_image, source.cover_image_url, source.image_url, source.image, source.imageMain, source.imageThumb];
+
+    return [...collections.flatMap((items) => Array.isArray(items) ? items : []), ...directImages]
+        .filter((item) => !item?.media_type || item.media_type === 'image')
+        .map(getDynamicImageUrl)
+        .filter(Boolean);
 }
 
 const AMENITY_ICONS = {
@@ -96,9 +115,39 @@ export default function PropertyDetailModal({
     
     const [floorPlanVisible, setFloorPlanVisible] = useState(false);
     const [zoomVisible, setZoomVisible] = useState(false);
+    const [imageViewerVisible, setImageViewerVisible] = useState(false);
+    const [sheetSuspended, setSheetSuspended] = useState(false);
+    const viewerTimerRef = useRef(null);
+
+    useEffect(() => {
+        if (!visible) {
+            setImageViewerVisible(false);
+            setSheetSuspended(false);
+        }
+        return () => {
+            if (viewerTimerRef.current) clearTimeout(viewerTimerRef.current);
+        };
+    }, [visible]);
 
     const handleClose = () => {
         onClose?.();
+    };
+
+    const openImageViewer = () => {
+        if (galleryImages.length === 0) return;
+        setSheetSuspended(true);
+        viewerTimerRef.current = setTimeout(() => {
+            setImageViewerVisible(true);
+            viewerTimerRef.current = null;
+        }, 100);
+    };
+
+    const closeImageViewer = () => {
+        setImageViewerVisible(false);
+        viewerTimerRef.current = setTimeout(() => {
+            setSheetSuspended(false);
+            viewerTimerRef.current = null;
+        }, 100);
     };
 
     if (!project || !variant) return null;
@@ -118,7 +167,16 @@ export default function PropertyDetailModal({
             : basePriceValue)
         : "Contact for price";
     const areaText = variant.area || (areaValue ? `${areaValue} sq.ft.` : "\u2014");
-    const floorPlanSource = getImageSource(variant.image || variant.floor_plan_url, naksha);
+    const floorPlanSource = getImageSource(variant.floor_plan_url || variant.floor_plan_image, null);
+    const propertyImages = [...new Set(collectDynamicImages(variant))];
+    const projectImages = [...new Set(collectDynamicImages({
+        images: project.projectImages || project.images,
+        media: project.media,
+        imageMain: project.imageMain,
+        imageThumb: project.imageThumb,
+    }))];
+    const galleryImages = propertyImages.length > 0 ? propertyImages : projectImages;
+    const heroImage = galleryImages[0] ? { uri: galleryImages[0] } : null;
     const inventoryValue = variant.inventory ?? project.inventory ?? `${project.units ?? "—"}`;
     const amenitiesList = (variant.amenities?.length ? variant.amenities : (project.amenities || []))
         .map((a) => (typeof a === 'string' ? a : a?.name))
@@ -161,7 +219,7 @@ export default function PropertyDetailModal({
 
     return (
         <>
-            <SimpleBottomSheet visible={visible} onClose={handleClose} maxHeightPercent="88%">
+            <SimpleBottomSheet visible={visible && !sheetSuspended} onClose={handleClose} maxHeightPercent="88%">
                 {/* Header Section mimicking original layout handle style */}
                 <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
                     <TouchableOpacity onPress={handleClose}>
@@ -177,38 +235,34 @@ export default function PropertyDetailModal({
                     className="mx-5 rounded-2xl mb-4 border border-gray-300"
                     contentContainerStyle={{ paddingBottom: 16 }}
                 >
-                    {/* Hero Image Section */}
-                    <View style={{ height: 145, overflow: "hidden" }}>
-                        <View style={{ flex: 1, flexDirection: "row" }}>
+                    {/* Dynamic property gallery */}
+                    <TouchableOpacity
+                        activeOpacity={heroImage ? 0.9 : 1}
+                        disabled={!heroImage}
+                        onPress={openImageViewer}
+                        style={{ height: 145, overflow: "hidden", backgroundColor: "#F4F7FF" }}
+                    >
+                        {heroImage ? (
                             <Image
-                                source={project.imageMain}
-                                style={{ flex: 1.4, height: 145 }}
+                                source={heroImage}
+                                style={{ width: "100%", height: "100%" }}
                                 resizeMode="cover"
                             />
-                            <View style={{ width: 2, backgroundColor: "#fff" }} />
-                            <View style={{ flex: 1, height: 145, position: "relative" }}>
-                                <Image
-                                    source={project.imageThumb ?? project.imageMain}
-                                    style={{ width: "100%", height: "100%" }}
-                                    resizeMode="cover"
-                                />
-                                <View
-                                    style={{
-                                        position: "absolute",
-                                        bottom: 8,
-                                        right: 8,
-                                        backgroundColor: "rgba(0,0,0,0.55)",
-                                        borderRadius: 6,
-                                        paddingHorizontal: 6,
-                                        paddingVertical: 2,
-                                    }}
-                                >
-                                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
-                                        1/{project.totalImages ?? 10}
-                                    </Text>
-                                </View>
+                        ) : (
+                            <View className="flex-1 items-center justify-center px-4">
+                                <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                                <Text className="mt-2 text-center text-[11px] font-manrope-bold text-gray-400">No property images available</Text>
                             </View>
-                        </View>
+                        )}
+
+                        {galleryImages.length > 0 && (
+                            <View className="absolute bottom-2 right-2 flex-row items-center rounded-lg bg-black/60 px-2 py-1">
+                                <Ionicons name="images-outline" size={12} color="#fff" />
+                                <Text className="ml-1 text-[10px] font-manrope-bold text-white">
+                                    View {galleryImages.length} {galleryImages.length === 1 ? "Photo" : "Photos"}
+                                </Text>
+                            </View>
+                        )}
 
                         {/* Squarft Verified Badge */}
                         <View
@@ -254,7 +308,7 @@ export default function PropertyDetailModal({
                                 />
                             </TouchableOpacity>
                         )}
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Possession Info Row */}
                     <View className="flex-row items-center gap-5 mx-5 mt-3 mb-3.5">
@@ -286,20 +340,21 @@ export default function PropertyDetailModal({
                                 </Text>
                             </View>
                             <TouchableOpacity
-                                onPress={() => setFloorPlanVisible((v) => !v)}
+                                onPress={() => floorPlanSource && setFloorPlanVisible((v) => !v)}
+                                disabled={!floorPlanSource}
                                 className="flex-row items-center gap-1.5 rounded-xl px-3 py-3"
-                                style={{ backgroundColor: floorPlanVisible ? "#4A43EC" : "#DAE2FF" }}
+                                style={{ backgroundColor: floorPlanSource ? (floorPlanVisible ? "#4A43EC" : "#DAE2FF") : "#F3F4F6" }}
                             >
                                 <MaterialCommunityIcons
                                     name="floor-plan"
                                     size={14}
-                                    color={floorPlanVisible ? "#fff" : "#4A43EC"}
+                                    color={!floorPlanSource ? "#9CA3AF" : floorPlanVisible ? "#fff" : "#4A43EC"}
                                 />
                                 <Text
                                     className="text-[12px] font-manrope-bold"
-                                    style={{ color: floorPlanVisible ? "#fff" : "#4A43EC" }}
+                                    style={{ color: !floorPlanSource ? "#9CA3AF" : floorPlanVisible ? "#fff" : "#4A43EC" }}
                                 >
-                                    {floorPlanVisible ? "Hide Floor Plan" : "See Floor Plan"}
+                                    {!floorPlanSource ? "Floor Plan Unavailable" : floorPlanVisible ? "Hide Floor Plan" : "See Floor Plan"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -418,6 +473,12 @@ export default function PropertyDetailModal({
                 </View>
                 )}
             </SimpleBottomSheet>
+
+            <ImageLightbox
+                visible={imageViewerVisible}
+                images={galleryImages}
+                onClose={closeImageViewer}
+            />
 
             {/* Maintained Portal Modal for full-resolution architectural maps */}
             <ZoomableImage
