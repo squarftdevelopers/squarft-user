@@ -278,6 +278,48 @@ function toImageSource(value, fallback = null) {
   return fallback;
 }
 
+function formatPermissionDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return cleanText(value);
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function getDocumentCount(value) {
+  if (Array.isArray(value)) return value.length;
+  if (!value || typeof value !== 'string') return 0;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function getBuildingPermissionInfo(project = {}) {
+  const rawStatus = cleanText(project.municipal_status || project.municipalStatus);
+  const approved = project.municipal_approved === true || project.municipalApproved === true;
+  const referenceNumber = cleanText(project.municipal_reference_number || project.municipalReferenceNumber);
+  const approvalDate = formatPermissionDate(project.municipal_approval_date || project.municipalApprovalDate);
+  const expectedTime = cleanText(project.municipal_expected_time || project.municipalExpectedTime);
+  const documentCount = getDocumentCount(project.municipal_documents || project.municipalDocuments);
+  const hasData = approved || rawStatus || referenceNumber || approvalDate || expectedTime || documentCount > 0;
+
+  if (!hasData) return null;
+
+  const normalizedStatus = rawStatus.toLowerCase().replace(/[_-]+/g, ' ');
+  const notApplicable = normalizedStatus === 'not applicable';
+  const status = approved || normalizedStatus === 'yes'
+    ? 'Approved'
+    : (notApplicable ? 'Not applicable' : 'Pending');
+
+  return { status, approved: status === 'Approved', referenceNumber, approvalDate, expectedTime, documentCount };
+}
+
 function getProjectMediaImages(project = {}) {
   const media = [project.media, project.images, project.projectImages]
     .flatMap((items) => Array.isArray(items) ? items : []);
@@ -730,6 +772,7 @@ export default function ProjectDetail() {
   const hasPossession = Boolean(cleanText(project.possession));
   const hasBuilder = Boolean(project.builder && project.developerId);
   const hasBookableUnits = normalizedVariants.length > 0;
+  const buildingPermission = getBuildingPermissionInfo(activeApiProject || base);
 
   const savedProjectData = {
     id: projectSaveId,
@@ -870,7 +913,9 @@ export default function ProjectDetail() {
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleOpenMap}
-              className="flex-[2] border border-gray-200 rounded-xl p-3 overflow-hidden"
+              className="flex-[2] flex-row items-center border border-gray-200 rounded-xl p-3 overflow-hidden"
+              accessibilityRole="button"
+              accessibilityLabel="View approximate project location on map"
             >
               <View className="flex-1 mr-1.5">
                 <Text
@@ -887,6 +932,9 @@ export default function ProjectDetail() {
                   </Text>
                 </View>
                 <ReraStatusBadge approved={project.rera} textClassName="text-[10px]" />
+              </View>
+              <View className="w-9 h-9 rounded-full bg-[#F0EEFF] items-center justify-center ml-2">
+                <Ionicons name="map-outline" size={19} color="#4A43EC" />
               </View>
             </TouchableOpacity>
           </View>
@@ -946,6 +994,57 @@ export default function ProjectDetail() {
             )}
           </View>
         </View>
+
+        {buildingPermission ? (
+          <View className="mx-4 bg-white rounded-xl border border-[#DDD9FF] px-4 py-4 mb-3">
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center flex-1 mr-3">
+                <View className="w-9 h-9 rounded-full bg-[#F1EFFF] items-center justify-center mr-3">
+                  <Ionicons name="business-outline" size={18} color="#4A43EC" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[14px] font-manrope-extrabold text-[#111827]">Building permission</Text>
+                  <Text className="text-[10px] font-manrope text-[#6B7280] mt-0.5">Municipal approval</Text>
+                </View>
+              </View>
+              <View className={`rounded-full px-3 py-1 ${buildingPermission.approved ? 'bg-[#EAF8EF]' : buildingPermission.status === 'Not applicable' ? 'bg-gray-100' : 'bg-[#FFF5E6]'}`}>
+                <Text className={`text-[10px] font-manrope-bold ${buildingPermission.approved ? 'text-[#18864B]' : buildingPermission.status === 'Not applicable' ? 'text-gray-600' : 'text-[#B66A00]'}`}>
+                  {buildingPermission.status}
+                </Text>
+              </View>
+            </View>
+
+            <View className="bg-[#F8F7FF] rounded-lg px-3 py-2.5">
+              {buildingPermission.referenceNumber ? (
+                <View className="flex-row justify-between gap-4 mb-2">
+                  <Text className="text-[11px] font-manrope text-[#6B7280]">Permission number</Text>
+                  <Text className="text-[11px] font-manrope-bold text-[#111827] flex-1 text-right">{buildingPermission.referenceNumber}</Text>
+                </View>
+              ) : null}
+              {buildingPermission.approvalDate ? (
+                <View className="flex-row justify-between gap-4 mb-2">
+                  <Text className="text-[11px] font-manrope text-[#6B7280]">Approval date</Text>
+                  <Text className="text-[11px] font-manrope-bold text-[#111827]">{buildingPermission.approvalDate}</Text>
+                </View>
+              ) : null}
+              {buildingPermission.expectedTime ? (
+                <View className="flex-row justify-between gap-4 mb-2">
+                  <Text className="text-[11px] font-manrope text-[#6B7280]">Expected timeline</Text>
+                  <Text className="text-[11px] font-manrope-bold text-[#111827]">{buildingPermission.expectedTime}</Text>
+                </View>
+              ) : null}
+              {buildingPermission.documentCount > 0 ? (
+                <View className="flex-row justify-between gap-4">
+                  <Text className="text-[11px] font-manrope text-[#6B7280]">Documents available</Text>
+                  <Text className="text-[11px] font-manrope-bold text-[#111827]">{buildingPermission.documentCount}</Text>
+                </View>
+              ) : null}
+              {!buildingPermission.referenceNumber && !buildingPermission.approvalDate && !buildingPermission.expectedTime && buildingPermission.documentCount === 0 ? (
+                <Text className="text-[11px] font-manrope text-[#6B7280]">No additional permission details have been provided.</Text>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
         {/* Divider */}
         <View className="mx-4 mb-6 mt-1 h-px bg-gray-200" />

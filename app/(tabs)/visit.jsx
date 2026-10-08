@@ -136,23 +136,8 @@ const getApiList = (response) => {
   return [];
 };
 
-const parseCoordinate = (value) => {
-  const coordinate = Number(value);
-  return Number.isFinite(coordinate) ? coordinate : null;
-};
-
-const getCoordinates = (item) => {
-  const latitude = parseCoordinate(item?.latitude ?? item?.lat ?? item?.property_latitude ?? item?.propertyLatitude);
-  const longitude = parseCoordinate(item?.longitude ?? item?.lng ?? item?.property_longitude ?? item?.propertyLongitude);
-
-  if (latitude === null || longitude === null) return null;
-  return { latitude, longitude };
-};
-
 const getDestinationLabel = (visit, property) => {
   const parts = [
-    property?.title || visit?.title,
-    property?.address || property?.property_address || visit?.property_address,
     property?.area || visit?.area || visit?.location,
     property?.city || visit?.city,
     property?.pincode || visit?.pincode,
@@ -342,14 +327,15 @@ export default function Visit() {
       }
     }
 
-    const coordinates = getCoordinates(property) || getCoordinates(visit);
     const label = getDestinationLabel(visit, property);
 
-    if (!coordinates && !label) {
+    if (!label) {
       throw new Error("This property does not have a destination location.");
     }
 
-    return { coordinates, label };
+    // Do not expose a project's exact stored coordinates to external map apps.
+    // Google Maps receives only the broader area/city/pincode destination.
+    return { coordinates: null, label };
   }, [token]);
 
   const handleOpenDirections = useCallback(async (visit) => {

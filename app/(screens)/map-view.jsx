@@ -267,12 +267,12 @@ function NativeProjectMap({ items, selectedId, userLocation, onSelectProject, ro
                 />
             )}
 
-            {items.map(({ project, coordinate, source }, index) => {
+            {items.map(({ project, coordinate }, index) => {
                 const id = getProjectId(project);
                 const selected = id === selectedId;
                 const title = getProjectTitle(project);
                 const address = getProjectAddress(project);
-                const showPrivacyArea = source === "stored" && !project?.isLandmark;
+                const showPrivacyArea = !project?.isLandmark;
 
                 if (showPrivacyArea) {
                     return (
@@ -356,7 +356,7 @@ const openNavigation = (coordinate, userLocation) => {
     });
 };
 
-function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, isExactCoordinate, coordinate, onSelect, onToggleSave, onNavigate, isRouting, isLandmark }) {
+function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, coordinate, onSelect, onToggleSave, onNavigate, isRouting, isLandmark }) {
     const imageSource = getImageSource(item);
 
     return (
@@ -410,7 +410,7 @@ function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, isExa
                     <Ionicons name={hasCoordinate ? "location-outline" : "alert-circle-outline"} size={11} color={hasCoordinate ? "#64748B" : "#EF4444"} />
                     <Text style={{ flex: 1, fontSize: 11, color: hasCoordinate ? "#64748B" : "#EF4444" }} numberOfLines={1}>
                         {hasCoordinate
-                            ? (isExactCoordinate && !isLandmark ? `Approximate location within ${EXACT_LOCATION_PRIVACY_RADIUS_METERS} m` : getProjectAddress(item))
+                            ? (!isLandmark ? `Approximate location within ${EXACT_LOCATION_PRIVACY_RADIUS_METERS} m` : getProjectAddress(item))
                             : "Exact map location missing"}
                     </Text>
                 </View>
@@ -424,7 +424,7 @@ function MapProjectCard({ item, index, isSelected, isSaved, hasCoordinate, isExa
                         </View>
                     )}
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: isLandmark ? 1 : undefined, justifyContent: isLandmark ? "flex-end" : undefined }}>
-                        {hasCoordinate && (
+                        {hasCoordinate && isLandmark && (
                             <TouchableOpacity
                                 disabled={isRouting}
                                 onPress={() => onNavigate?.(coordinate)}
@@ -895,7 +895,6 @@ export default function MapViewScreen() {
                                     isSelected={id === activeSelectedId || id === selectedId}
                                     isSaved={savedProjects.includes(id)}
                                     hasCoordinate={hasCoordinate}
-                                    isExactCoordinate={geocodedItem?.source === 'stored'}
                                     coordinate={geocodedItem?.coordinate}
                                     isRouting={routingProjectId === id}
                                     isLandmark={isLandmarkView}
