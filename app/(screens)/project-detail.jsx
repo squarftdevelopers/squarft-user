@@ -28,7 +28,7 @@ import DetailFooter from "../../components/projectDetail/DetailFooter";
 import ReraStatusBadge from "../../components/ReraStatusBadge";
 import BuilderModal from "../../components/projectDetail/BuilderModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
-import { maskProjectName } from "../../services/projectDisplay";
+import { maskBuilderName, maskProjectName } from "../../services/projectDisplay";
 
 const frame260 = require("../../assets/images/Frame 26086854.png");
 const frame871 = require("../../assets/images/Frame 26086871.png");
@@ -810,7 +810,7 @@ export default function ProjectDetail() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {project.builder} 
+                {maskBuilderName(project.builder)}
               </Text>
              
             </TouchableOpacity>

@@ -6,7 +6,7 @@ import BuilderModal from "./BuilderModal";
 import PropertyDetailModal from "./PropertyDetailModal";
 import { getProjectPropertyCardConfig } from "../../services/propertyConfiguration";
 import EmptyPropertySection from "../EmptyPropertySection";
-import { maskProjectName } from "../../services/projectDisplay";
+import { maskBuilderName, maskProjectName } from "../../services/projectDisplay";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.55;
@@ -236,7 +236,7 @@ export default function Overview({ project }) {
                     </View>
                     <View className="flex-1 pr-2">
                         <Text className="text-[11px] text-gray-400 ">Posted by</Text>
-                        <Text className="text-[14px] font-manrope-extrabold text-gray-900" numberOfLines={1}>{project.builder}</Text>
+                        <Text className="text-[14px] font-manrope-extrabold text-gray-900" numberOfLines={1}>{maskBuilderName(project.builder)}</Text>
                         <Text className="text-[11px] font-semibold text-indigo-600 mt-0.5">Developer details</Text>
                     </View>
                 </View>

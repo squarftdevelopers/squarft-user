@@ -11,7 +11,7 @@ import { openBudgetFilter, setSearchQuery, clearNonTypeFilters, clearPropertyTyp
 import { fetchFeaturedProjectsThunk, fetchNearbyProjectsThunk, fetchProjectListThunk, setMapProjects } from "../../store/slices/projectSlice";
 import EmptyPropertySection from "../../components/EmptyPropertySection";
 import { fetchHighGrowthProjectsThunk } from "../../store/slices/propertiesSlice";
-import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount, maskProjectName } from "../../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, parseProjectPriceAmount, formatProjectPriceAmount, maskBuilderName, maskProjectName } from "../../services/projectDisplay";
 import ReraStatusBadge, { isReraApproved } from "../../components/ReraStatusBadge";
 import { applyProjectFilters } from "../../services/projectFilters";
 
@@ -355,7 +355,7 @@ function ProjectCard({ item }) {
                     }
                     {developerName ? (
                         <View className="absolute top-0 left-0 right-0 px-3 py-2 bg-black/45">
-                            <Text className="text-white text-[11px] font-manrope-extrabold" numberOfLines={1}>{developerName}</Text>
+                            <Text className="text-white text-[11px] font-manrope-extrabold" numberOfLines={1}>{maskBuilderName(developerName)}</Text>
                         </View>
                     ) : null}
                 </View>

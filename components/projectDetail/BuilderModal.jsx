@@ -9,7 +9,7 @@ import DetailFooter from "./DetailFooter";
 import ReraStatusBadge, { isReraApproved } from "../ReraStatusBadge";
 import SimpleBottomSheet from "../SimpleBottomSheet";
 import EmptyPropertySection from "../EmptyPropertySection";
-import { maskProjectName } from "../../services/projectDisplay";
+import { maskBuilderName, maskProjectName } from "../../services/projectDisplay";
 
 const POSSESSION_FILTERS = ["All", "In 3 yrs", "Ready To Move", "Under Construction"];
 
@@ -287,7 +287,7 @@ export default function BuilderModal({ visible, onClose, project }) {
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View className="flex-row items-start justify-between px-5 mb-3">
                     <View className="flex-1 pr-4 ">
-                        <Text className="text-[17px] mb-2 pr-6 font-manrope-semibold text-gray-900 leading-7">{builderName}</Text>
+                        <Text className="text-[17px] mb-2 pr-6 font-manrope-semibold text-gray-900 leading-7">{maskBuilderName(builderName)}</Text>
                         <View className="flex-row items-center gap-3 mt-2">
                             <View className="bg-gray-100 px-3 py-1 rounded-lg">
                                 <Text className="text-[12px] font-manrope-regular text-gray-500">{project?.builderCity}</Text>

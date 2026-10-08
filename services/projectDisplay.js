@@ -12,6 +12,8 @@ export function maskProjectName(value) {
     return `${name.slice(0, 4)}****`;
 }
 
+export const maskBuilderName = maskProjectName;
+
 const firstValue = (...values) => values.find((value) => {
     if (value === null || value === undefined || value === '') return false;
     return cleanProjectText(value) !== '';
