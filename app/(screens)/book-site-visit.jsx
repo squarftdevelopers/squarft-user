@@ -12,13 +12,27 @@ import { currentUser } from "../../data/user";
 import { maskProjectName } from "../../services/projectDisplay";
 
 const MINUTES_PER_PROPERTY = 90;
-const FALLBACK = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=300&q=80";
 const isUuid = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v || ""));
 const propertyId = (v) => [v?.propertyIds?.[0], v?.property_id, v?.propertyId, v?.id].find(isUuid);
 const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const time = (v) => new Date(v).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 const duration = (m) => m % 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m / 60} ${m === 60 ? "hour" : "hours"}`;
 const officerData = (v = {}) => ({ ...v, id: v.officer_id || v.id, name: v.full_name || [v.first_name, v.last_name].filter(Boolean).join(" ") || "Sales Officer" });
+const toImageSource = (value) => {
+  if (typeof value === "string" && value.trim()) return { uri: value.trim() };
+  if (!value || typeof value !== "object") return null;
+  if (typeof value.uri === "string" && value.uri.trim()) return value;
+  const uri = value.url || value.image_url || value.media_url || value.thumbnail_url;
+  return typeof uri === "string" && uri.trim() ? { uri: uri.trim() } : null;
+};
+const getVisitImageSource = (visit = {}) => [
+  visit.image,
+  visit.imageMain,
+  visit.imageThumb,
+  visit.cover_image_url,
+  visit.image_url,
+  visit.variantDetails?.image,
+].map(toImageSource).find(Boolean) || null;
 
 export default function BookSiteVisit() {
   const router = useRouter();
@@ -90,7 +104,7 @@ export default function BookSiteVisit() {
       const labelDate = new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       const upcoming = visits.map((visit, index) => {
         const row = rows[index] || {};
-        return { id: row.id || `${propertyIds[index]}_${Date.now()}`, projectId: visit.projectId || String(visit.id).replace(/\d{13}$/, ""), propertyIds: visit.propertyIds?.length ? visit.propertyIds : [propertyIds[index]], title: visit.title || visit.name, location: visit.location, image: visit.image || visit.imageMain || FALLBACK, status: "UPCOMING", dateFull: `${labelDate} · ${time(row.slot_start || slot.slot_start)}`, slot_start: row.slot_start, slot_end: row.slot_end, isoDate: row.slot_start, visitors, notes, salesOfficerId: officerId, salesOfficerName: officer?.name, salesOfficerRole: "Sales Officer", bookingId: row.id, visitorName: currentUser.name, duration: "1.5 Hours", visitGroupId: result.data?.visit_group_id };
+        return { id: row.id || `${propertyIds[index]}_${Date.now()}`, projectId: visit.projectId || String(visit.id).replace(/\d{13}$/, ""), propertyIds: visit.propertyIds?.length ? visit.propertyIds : [propertyIds[index]], title: visit.title || visit.name, location: visit.location, image: getVisitImageSource(visit), status: "UPCOMING", dateFull: `${labelDate} · ${time(row.slot_start || slot.slot_start)}`, slot_start: row.slot_start, slot_end: row.slot_end, isoDate: row.slot_start, visitors, notes, salesOfficerId: officerId, salesOfficerName: officer?.name, salesOfficerRole: "Sales Officer", bookingId: row.id, visitorName: currentUser.name, duration: "1.5 Hours", visitGroupId: result.data?.visit_group_id };
       });
       dispatch(confirmVisits(upcoming));
       router.replace({ pathname: "/(screens)/booking-status", params: { date, time: time(slot.slot_start), propertyName: upcoming[0]?.title, propertyId: upcoming[0]?.projectId, bookingIds: upcoming.map((v) => v.id).join(",") } });
@@ -103,7 +117,7 @@ export default function BookSiteVisit() {
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : "height"}><ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 44 }} keyboardShouldPersistTaps="handled">
       <View className="rounded-2xl bg-[#F5F3FF] border border-[#DDD8FF] p-4 flex-row items-center mb-6"><View className="w-10 h-10 rounded-full bg-[#4A43EC] items-center justify-center"><Feather name="map" size={17} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[13px] font-manrope-bold">{visits.length} {visits.length === 1 ? "property" : "properties"} in one visit</Text><Text className="text-[11px] font-manrope text-gray-500 mt-0.5">One officer · {duration(totalMinutes)} · selected order</Text></View></View>
       <Text className="text-[14px] font-manrope-bold mb-3">Visit order</Text>
-      {visits.map((v, i) => <View key={v.id} className="border border-gray-200 rounded-2xl p-3 mb-2 flex-row items-center"><View className="w-7 h-7 rounded-full bg-[#4A43EC] items-center justify-center"><Text className="text-white text-[11px] font-manrope-bold">{i + 1}</Text></View><Image source={{ uri: typeof (v.image || v.imageMain) === "string" ? (v.image || v.imageMain) : FALLBACK }} className="w-12 h-12 rounded-xl mx-3" /><View className="flex-1"><Text numberOfLines={1} className="text-[12px] font-manrope-bold">{v.variant || v.title || v.name}</Text><Text numberOfLines={1} className="text-[10.5px] font-manrope text-gray-500">{maskProjectName(v.projectName || v.title || v.name)}</Text></View><Text className="text-[10px] text-[#4A43EC] font-manrope-bold">90 MIN</Text></View>)}
+      {visits.map((v, i) => { const imageSource = getVisitImageSource(v); return <View key={v.id} className="border border-gray-200 rounded-2xl p-3 mb-2 flex-row items-center"><View className="w-7 h-7 rounded-full bg-[#4A43EC] items-center justify-center"><Text className="text-white text-[11px] font-manrope-bold">{i + 1}</Text></View>{imageSource ? <Image source={imageSource} className="w-12 h-12 rounded-xl mx-3" resizeMode="cover" /> : <View className="w-12 h-12 rounded-xl mx-3 bg-[#F1F5F9] items-center justify-center"><Feather name="home" size={18} color="#94A3B8" /></View>}<View className="flex-1"><Text numberOfLines={1} className="text-[12px] font-manrope-bold">{v.variant || v.title || v.name}</Text><Text numberOfLines={1} className="text-[10.5px] font-manrope text-gray-500">{maskProjectName(v.projectName || v.title || v.name)}</Text></View><Text className="text-[10px] text-[#4A43EC] font-manrope-bold">90 MIN</Text></View>; })}
 
       <Text className="text-[14px] font-manrope-bold mt-6 mb-3">Select date</Text><View className="border border-gray-200 rounded-2xl overflow-hidden"><Calendar current={date} minDate={today} onDayPress={(d) => setDate(d.dateString)} markedDates={{ [date]: { selected: true, selectedColor: "#4A43EC" } }} theme={{ arrowColor: "#4A43EC", todayTextColor: "#4A43EC", textMonthFontFamily: "manrope-bold", textDayFontFamily: "manrope-medium" }} /></View>
       <Text className="text-[14px] font-manrope-bold mt-7">Choose starting time</Text><Text className="text-[11px] font-manrope text-gray-500 mt-1 mb-4">Only times where one officer is free for the full {duration(totalMinutes)} are shown.</Text>
