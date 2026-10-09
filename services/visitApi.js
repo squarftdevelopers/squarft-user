@@ -31,12 +31,12 @@ export const visitApi = {
         request(`/api/v1/visits/branches?${query({ city })}`, token),
 
     // Get available time slots
-    getAvailableSlots: (token, property_id, date, branch_id) =>
-        request(`/api/v1/visits/slots?${query({ property_id, date, branch_id })}`, token),
+    getAvailableSlots: (token, property_id, date, branch_id, property_count = 1) =>
+        request(`/api/v1/visits/slots?${query({ property_id, date, branch_id, property_count })}`, token),
 
     // Get available sales officers for a selected slot
-    getAvailableOfficers: (token, property_id, slot_start, branch_id) =>
-        request(`/api/v1/visits/available-officers?${query({ property_id, slot_start, branch_id })}`, token),
+    getAvailableOfficers: (token, property_id, slot_start, branch_id, property_count = 1) =>
+        request(`/api/v1/visits/available-officers?${query({ property_id, slot_start, branch_id, property_count })}`, token),
 
     // Create site visit
     createSiteVisit: (token, visitData) =>
