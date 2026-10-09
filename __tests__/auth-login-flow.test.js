@@ -16,17 +16,18 @@ test('existing phone receives login OTP', async () => {
     const store = makeStore();
     await store.dispatch(startLoginThunk({ phone: '+919876543210' }));
     expect(store.getState().auth).toMatchObject({ otpFlow: 'login', otpToken: 'login-otp', loading: false });
-    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ phone: '+919876543210', purpose: 'login' });
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ phone: '+919876543210', purpose: 'login', role: 'user' });
 });
 
-test('unknown phone enters registration without sending a registration OTP yet', async () => {
+test('unknown phone is rejected at the login phone step', async () => {
     response(400, { message: 'No account found with this phone number' });
     const store = makeStore();
     store.dispatch(setBranch({ id: 'old-branch', name: 'Old' }));
     store.dispatch(setFullName('Old Name'));
     const result = await store.dispatch(startLoginThunk({ phone: '+919876543210' }));
-    expect(result.payload.needsRegistration).toBe(true);
-    expect(store.getState().auth).toMatchObject({ otpFlow: 'register', otpToken: null, branchId: null, fullName: '', mobile: '+919876543210' });
+    expect(startLoginThunk.rejected.match(result)).toBe(true);
+    expect(result.payload).toBe('No account found with this phone number');
+    expect(store.getState().auth).toMatchObject({ otpToken: null, error: 'No account found with this phone number' });
     expect(global.fetch).toHaveBeenCalledTimes(1);
 });
 
@@ -44,7 +45,7 @@ test('registration passes selected branch to the backend and saves the returned 
     response(201, { token: 'session', user: { id: 'user', branch_id: 'selected-branch' } });
     const store = makeStore();
     await store.dispatch(registerThunk({ verified_token: 'verified', first_name: 'Manas', last_name: '', branch_id: 'selected-branch' }));
-    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ verified_token: 'verified', first_name: 'Manas', last_name: '', branch_id: 'selected-branch' });
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ verified_token: 'verified', first_name: 'Manas', last_name: '', branch_id: 'selected-branch', role: 'user' });
     expect(store.getState().auth.user.branch_id).toBe('selected-branch');
     expect(store.getState().auth.isLoggedIn).toBe(true);
 });

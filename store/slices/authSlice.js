@@ -215,7 +215,7 @@ const authSlice = createSlice({
             })
             .addCase(startLoginThunk.fulfilled, (state, action) => {
                 state.loading = false;
-                state.otpFlow = action.payload.needsRegistration ? 'register' : 'login';
+                state.otpFlow = 'login';
                 state.otpToken = action.payload.otp_token || null;
             })
             .addCase(startLoginThunk.rejected, (state, action) => {

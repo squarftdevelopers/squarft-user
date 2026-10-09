@@ -24,7 +24,7 @@ export default function Login() {
         if (loading || localNumber.length !== 10) return;
         const result = await dispatch(startLoginThunk({ phone }));
         if (startLoginThunk.fulfilled.match(result)) {
-            router.push(result.payload.needsRegistration ? '/complete-login' : '/otp-verification');
+            router.push('/otp-verification');
         }
     };
 

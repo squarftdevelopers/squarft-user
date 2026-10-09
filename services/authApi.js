@@ -1,5 +1,7 @@
 import { BASE_URL } from './config';
 
+const ROLE = 'user';
+
 async function request(path, options = {}) {
     try {
         const res = await fetch(`${BASE_URL}${path}`, {
@@ -28,33 +30,24 @@ export const authApi = {
         return response.data || [];
     },
 
-    startLogin: async (phone) => {
-        try {
-            return { ...await authApi.sendOtp(phone, 'login'), needsRegistration: false };
-        } catch (error) {
-            if (error.status === 400 && error.message === 'No account found with this phone number') {
-                return { needsRegistration: true };
-            }
-            throw error;
-        }
-    },
+    startLogin: async (phone) => authApi.sendOtp(phone, 'login'),
 
     login: (verified_token) =>
         request('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ verified_token }),
+            body: JSON.stringify({ verified_token, role: ROLE }),
         }),
 
     register: (verified_token, first_name, last_name, branch_id) =>
         request('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ verified_token, first_name, last_name, branch_id }),
+            body: JSON.stringify({ verified_token, first_name, last_name, branch_id, role: ROLE }),
         }),
 
     sendOtp: (phone, purpose) =>
         request('/auth/send-otp', {
             method: 'POST',
-            body: JSON.stringify({ phone, purpose }),
+            body: JSON.stringify({ phone, purpose, role: ROLE }),
         }),
 
     verifyOtp: (otp_token, otp) =>
