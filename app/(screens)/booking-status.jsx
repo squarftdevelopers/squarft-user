@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Image, Platform, ScrollView } from "react-native";
+import { View, Text, Pressable, Platform, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,14 +6,6 @@ import { useSelector } from "react-redux";
 import { StatusBar } from "expo-status-bar";
 import SuccessCheck from "../../components/SuccessCheck";
 import { maskProjectName } from "../../services/projectDisplay";
-import { Audio } from 'expo-av';
-
-const FALLBACK_IMAGE = { uri: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" };
-
-const getImageSource = (image) => {
-  if (typeof image === "string" && image) return { uri: image };
-  return image || FALLBACK_IMAGE;
-};
 
 export default function BookingStatus() {
   const router = useRouter();
@@ -31,13 +23,13 @@ export default function BookingStatus() {
   const properties = bookedProperties.length > 0
     ? bookedProperties
     : [{
-        title: paramPropertyName || fallbackProperty?.title || "The Grand Atrium",
-        image: fallbackProperty?.image,
+        title: paramPropertyName || fallbackProperty?.title || "Property",
         projectId: paramPropertyId,
         bookingId: fallbackProperty?.bookingId,
       }];
 
   const propertyName = properties.length === 1 ? properties[0].title : `${properties.length} properties`;
+  const displayPropertyName = (property) => maskProjectName(property.title || property.name) || "Property";
 
   const formattedDate = date
     ? new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -97,12 +89,21 @@ export default function BookingStatus() {
             key={property.id || property.projectId || index}
             className="bg-white rounded-[18px] border border-gray-100 shadow-sm overflow-hidden mb-5"
           >
-            <Image source={getImageSource(property.image || property.imageMain)} className="w-full h-[150px]" resizeMode="cover" />
             <View className="p-4">
               <View className="flex-row justify-between items-start mb-1.5">
-                <Text className="text-[15px] font-manrope-extrabold text-[#111827] flex-1 mr-2" numberOfLines={1}>
-                  {property.title}
-                </Text>
+                <View className="flex-row items-center flex-1 mr-2">
+                  <View className="w-9 h-9 rounded-full bg-[#F1EFFF] items-center justify-center mr-3">
+                    <Text className="text-[#4A43EC] text-[12px] font-manrope-extrabold">{index + 1}</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[10px] font-manrope-bold text-[#9CA3AF] uppercase tracking-[1px] mb-0.5">
+                      Property {index + 1}
+                    </Text>
+                    <Text className="text-[15px] font-manrope-extrabold text-[#111827]" numberOfLines={1}>
+                      {displayPropertyName(property)}
+                    </Text>
+                  </View>
+                </View>
                 <View className="bg-[#EEEBFF] px-2.5 py-[3px] rounded-full">
                   <Text className="text-[#4A43EC] text-[9px] font-manrope-bold uppercase">
                     CONFIRMED
