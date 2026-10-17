@@ -16,7 +16,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import MapView, { Circle, Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
-import { allProjects } from "../../data/projects";
 import {
     fetchSavedPropertiesThunk,
     savePropertyThunk,
@@ -497,7 +496,7 @@ export default function MapViewScreen() {
     const isLandmarkView = Boolean(singleProject?.isLandmark);
 
     const baseProjects = useMemo(
-        () => (singleProject ? [singleProject] : (mapProjects?.length ? mapProjects : allProjects)),
+        () => (singleProject ? [singleProject] : (mapProjects || [])),
         [singleProject, mapProjects]
     );
 

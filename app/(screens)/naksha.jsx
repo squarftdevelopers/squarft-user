@@ -1,12 +1,12 @@
 import { useState } from "react";
 import {
-    View, Text, TouchableOpacity, Image,
+    View, Text, TouchableOpacity,
     ScrollView, SafeAreaView, useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const naksha2 = require("../../assets/images/building_naksha2.png");
+import ProgressiveImage from "../../components/ProgressiveImage";
 
 const FLOORS = [
     { label: "Floor 12", sub: "Selected" },
@@ -18,7 +18,7 @@ const FLOORS = [
 ];
 
 export default function NakshaScreen() {
-    const { variantType, areaSqft } = useLocalSearchParams();
+    const { variantType, areaSqft, image } = useLocalSearchParams();
     const [activeTab, setActiveTab] = useState("2D");
     const [activeFloor, setActiveFloor] = useState(0);
     const { width } = useWindowDimensions();
@@ -87,7 +87,7 @@ export default function NakshaScreen() {
                         style={{ flex: 1 }}
                         contentContainerStyle={{ alignItems: "center", justifyContent: "center", flex: 1 }}
                     >
-                        <Image source={naksha2} style={{ width: width - 40, height: 300, shadowColor: "#302c2cff",
+                        <ProgressiveImage source={image || null} style={{ width: width - 40, height: 300, shadowColor: "#302c2cff",
                                     shadowOpacity:12,
                                     shadowRadius:10,
                                     elevation: 2}} resizeMode="contain" />

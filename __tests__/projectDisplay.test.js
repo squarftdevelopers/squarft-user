@@ -16,3 +16,10 @@ test('collects unique project gallery images and excludes non-image media', () =
     'https://cdn.test/gallery-3.jpg',
   ]);
 });
+
+
+test('missing project photos never produce stock or sample image URLs', () => {
+  expect(getProjectImageUrls({})).toEqual([]);
+  expect(getProjectImageUrls({ cover_image_url: null, image: 'none', imageMain: undefined })).toEqual([]);
+  expect(getProjectImageUrls({ media: [{ media_type: 'document', url: 'https://cdn.test/plan.pdf' }] })).toEqual([]);
+});

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, Image, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 
-const naksha = require("../../assets/images/building_naksha.png");
+import ProgressiveImage from "../ProgressiveImage";
 
 const cardShadow = {
     shadowColor: "#2c2b2bff",
@@ -187,8 +187,8 @@ export default function FloorPlanModal({ visible, onClose, project }) {
                                     borderColor: "#fff",
                                 }}
                             />
-                            <Image
-                                source={naksha}
+                            <ProgressiveImage
+                                source={v.floor_plan_url || v.floorPlanUrl || v.image || null}
                                 style={{ width: 280, height: 140 }}
                                 resizeMode="contain"
                             />
@@ -201,6 +201,7 @@ export default function FloorPlanModal({ visible, onClose, project }) {
                                         pathname: "/(screens)/naksha",
                                         params: {
                                             variantType: v.type,
+                                            image: v.floor_plan_url || v.floorPlanUrl || v.image || "",
                                             areaSqft: project?.areaSqft,
                                         },
                                     });

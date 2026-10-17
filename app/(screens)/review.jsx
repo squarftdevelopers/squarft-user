@@ -1,4 +1,5 @@
-import { Text, View, Pressable, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
+import ProgressiveImage from "../../components/ProgressiveImage";
+import { Text, View, Pressable, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useState, useRef } from "react";
@@ -40,7 +41,7 @@ export default function Review() {
                 rating: propertyRating,
                 comment: comments.trim() || null,
             });
-            router.replace("/rating-submitted");
+            router.replace({ pathname: "/rating-submitted", params: { image: image || "" } });
         } catch (error) {
             const errorMessage = error.message || "Please try again.";
             if (errorMessage.includes("Invalid visit id")) {
@@ -58,7 +59,7 @@ export default function Review() {
 
     // Fallbacks just in case handled via direct standalone launch
     const propertyTitle = title || "Green Valley Residency";
-    const propertyImage = image || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
+    const propertyImage = image || null;
     const propertyLocation = location || "Unit 402, Block B • Bangalore";
     const propertyDate = dateFull || "24 Oct, 2023";
 
@@ -97,8 +98,8 @@ export default function Review() {
                             </Text>
 
                             <View className="flex-row items-center border border-gray-100 rounded-[16px] p-3 mb-6 bg-white">
-                                <Image
-                                    source={{ uri: propertyImage }}
+                                <ProgressiveImage
+                                    source={propertyImage}
                                     className="w-[68px] h-[68px] rounded-[10px] mr-4"
                                     resizeMode="cover"
                                 />

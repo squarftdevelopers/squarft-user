@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchBuilderDetailsThunk, clearBuilder } from "../../store/slices/builderSlice";
 import { fetchProjectListThunk } from "../../store/slices/projectSlice";
-import { allProjects } from "../../data/projects";
 import DetailFooter from "./DetailFooter";
 import ReraStatusBadge, { isReraApproved } from "../ReraStatusBadge";
 import SimpleBottomSheet from "../SimpleBottomSheet";
@@ -162,7 +161,7 @@ const getAddressText = (project = {}) => {
     return addressText || "Address on request";
 };
 
-const mapBuilderProject = (projectData = {}, fallbackImage = null) => {
+const mapBuilderProject = (projectData = {}) => {
     const nestedLocation = projectData.location && typeof projectData.location === "object"
         ? projectData.location
         : null;
@@ -180,7 +179,7 @@ const mapBuilderProject = (projectData = {}, fallbackImage = null) => {
         area: nestedLocation?.area || projectData.area,
         city: nestedLocation?.city || projectData.city,
         pincode: nestedLocation?.pincode || projectData.pincode,
-        imageMain: imageUrl ? { uri: imageUrl } : fallbackImage,
+        imageMain: imageUrl ? { uri: imageUrl } : null,
         possessionStatus: projectData.possession_status || projectData.possessionStatus || projectData.possession,
         price_from: projectData.price?.min_amount ?? projectData.price_from ?? projectData.property_min_price ?? projectData.min_price,
         price_to: projectData.price?.max_amount ?? projectData.price_to ?? projectData.property_max_price ?? projectData.max_price,
@@ -248,9 +247,9 @@ export default function BuilderModal({ visible, onClose, project }) {
     const useApiData = apiAttempted && !error && (currentBuilder || (apiProjects !== null && apiProjects !== undefined));
     
     const apiBuilderProjects = Array.isArray(apiProjects)
-        ? apiProjects.map((p) => mapBuilderProject(p, project?.imageMain))
+        ? apiProjects.map((p) => mapBuilderProject(p))
         : [];
-    const organizationBuilderProjects = organizationProjects.map((p) => mapBuilderProject(p, project?.imageMain));
+    const organizationBuilderProjects = organizationProjects.map((p) => mapBuilderProject(p));
     const useOrganizationProjects = organizationBuilderProjects.length > 0
         && (!useApiData || organizationBuilderProjects.length > apiBuilderProjects.length);
 
@@ -261,13 +260,7 @@ export default function BuilderModal({ visible, onClose, project }) {
     } else if (useApiData) {
         builderProjects = apiBuilderProjects;
     } else {
-        // Fallback to local data
-        const normalizeBuilder = (name) => name?.toLowerCase().trim() || "";
-        builderProjects = allProjects.filter((p) => {
-            const projectBuilder = normalizeBuilder(p.builder);
-            const currentBuilderName = normalizeBuilder(builderName);
-            return projectBuilder.includes(currentBuilderName) || currentBuilderName.includes(projectBuilder);
-        });
+        builderProjects = [];
     }
     
     // When using API data, filtering is done on backend; otherwise use frontend filtering

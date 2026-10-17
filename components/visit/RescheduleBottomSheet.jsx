@@ -1,5 +1,6 @@
+import ProgressiveImage from "../ProgressiveImage";
 import React, { useMemo, useCallback, useState } from "react";
-import { View, Text, Pressable, Image, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useDispatch } from "react-redux";
@@ -91,10 +92,7 @@ const RescheduleBottomSheet = React.forwardRef(({ visitData, onReschedule, onVie
     []
   );
 
-  const fallbackImage = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
-  const imageSource = visitData?.image 
-    ? (typeof visitData.image === 'string' ? { uri: visitData.image } : visitData.image)
-    : { uri: fallbackImage };
+  const imageSource = visitData?.image || null;
 
   const parsedDate = visitData?.isoDate ? new Date(visitData.isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "";
   const parsedTime = formatVisitTime(visitData);
@@ -126,7 +124,7 @@ const RescheduleBottomSheet = React.forwardRef(({ visitData, onReschedule, onVie
         <BottomSheetScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
             <View className="px-5 py-4">
                   <View className="border border-gray-100 rounded-[12px] overflow-hidden mb-3 bg-white">
-                    <Image 
+                    <ProgressiveImage 
                       source={imageSource} 
                       className="w-full h-[90px]" 
                       resizeMode="cover" 

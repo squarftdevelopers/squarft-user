@@ -699,32 +699,6 @@ export default function Home() {
           )}
         </View>
 
-        {/* Cashback Banner */}
-        <View className="mx-6 mt-6 mb-2 rounded-3xl overflow-hidden opacity-74" style={{ backgroundColor: "#6A5AE0", height: 115 }}>
-          {/* Dark circle behind building */}
-          <View style={{
-            position: "absolute",
-            right: -5,
-            top: -32,
-            width: 180,
-            height: 140,
-            borderRadius: 999,
-            backgroundColor: "#4A43EC",
-            opacity: 100,
-          }} />
-          {/* Text */}
-          <View className="px-5 pt-3" style={{ flex: 1, justifyContent: "center" }}>
-            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700", lineHeight: 24 }}>GET YOUR 20%{"\n"}CASHBACK</Text>
-            <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 6 }}>* Expired 25 Aug 2022</Text>
-          </View>
-          {/* Building image */}
-          <Image
-            source={require("../../assets/images/unsplash_RFDP7_80v5B.png")}
-            style={{ position: "absolute", right: 0, bottom: 0, width: 130, height: 120 }}
-            resizeMode="cover"
-          />
-        </View>
-
         {/* Project in Focus */}
         <View className="flex-row justify-between items-center px-5 mt-6 mb-5 ml-2">
           <Text className="text-[15px] font-manrope-extrabold text-gray-900">Project in focus</Text>

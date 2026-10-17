@@ -1,10 +1,10 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { buildProjectAddress, buildProjectPrice, maskProjectName } from "../services/projectDisplay";
+import { buildProjectAddress, buildProjectPrice, maskProjectName, getProjectImageUrls } from "../services/projectDisplay";
 import ProgressiveImage from './ProgressiveImage';
 
-const luxuryApartments = require("../assets/images/Luxury Apartments.png");
+
 
 const cardShadow = {
     shadowColor: "#d2abc0ff",
@@ -15,11 +15,8 @@ const cardShadow = {
 };
 
 export default function FeaturedCard({ item, onToggleFav, showBookVisit = false }) {
-    const isRemote = typeof item.image_url === 'string' || typeof item.image === 'string';
-    const remoteUri = item.image_url || item.image;
-    const imageSource = isRemote && remoteUri
-        ? { uri: remoteUri }
-        : (item.image ?? item.imageMain ?? luxuryApartments);
+    const imageUrl = getProjectImageUrls(item)[0];
+    const imageSource = imageUrl ? { uri: imageUrl } : null;
     const title = item.title ?? item.name;
     const location = item.display_location || buildProjectAddress(item) || item.location || [item.area, item.city].filter(Boolean).join(', ');
 

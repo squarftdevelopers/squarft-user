@@ -1,8 +1,10 @@
-import { View, Text, Pressable, Image, ScrollView } from "react-native";
+import ProgressiveImage from "../../components/ProgressiveImage";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 
 export default function RatingSubmitted() {
+    const { image } = useLocalSearchParams();
     return (
         <ScrollView
             className="flex-1 bg-white"
@@ -44,8 +46,8 @@ export default function RatingSubmitted() {
                             </Text>
                         </View>
                     </View>
-                    <Image
-                        source={{ uri: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" }}
+                    <ProgressiveImage
+                        source={image || null}
                         className="w-[76px] h-[76px] rounded-xl"
                         resizeMode="cover"
                     />
