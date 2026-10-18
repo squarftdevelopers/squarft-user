@@ -163,6 +163,18 @@ const TabTimeline = memo(function TabTimeline({ timeline = [], currentStageIndex
                         badge={item.badge || (status === 'current' ? 'IN PROGRESS' : null)}
                         iconName={item.iconName || 'ellipse-outline'}
                     >
+                        {item.unit && (
+                            <View className="mt-2 mb-1 rounded-lg border border-[#EBE5FF] bg-[#FCFAFF] px-3 py-2.5">
+                                <Text className="text-[12px] font-inter-bold text-[#111827]">
+                                    Unit {item.unit.unit_code || item.unit.title}
+                                </Text>
+                                {!![item.unit.configuration, item.unit.tower_name, item.unit.floor_name, item.unit.range_name].filter(Boolean).length && (
+                                    <Text className="mt-1 text-[11px] font-inter-medium text-[#6B7280]">
+                                        {[item.unit.configuration, item.unit.tower_name && `Tower ${item.unit.tower_name}`, item.unit.floor_name && `Floor ${item.unit.floor_name}`, item.unit.range_name].filter(Boolean).join(' · ')}
+                                    </Text>
+                                )}
+                            </View>
+                        )}
                         {item.images && (
                             <View className="flex-row gap-2 mt-2 mb-1">
                                 {item.images.map((img, idx) => (
