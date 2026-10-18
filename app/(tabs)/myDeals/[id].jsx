@@ -12,7 +12,9 @@ import TabPayments from "../../../components/myDeals/TabPayments";
 import TabDocuments from "../../../components/myDeals/TabDocuments";
 import TabOverview from "../../../components/myDeals/TabOverview";
 
-const TABS = ["Deal Created", "Timeline", "Token", "Payment Schedule", "Payment History", "Documents"];
+// Set to true to restore the Deal Created tab and its original default selection.
+const SHOW_DEAL_CREATED_TAB = false;
+const TABS = [...(SHOW_DEAL_CREATED_TAB ? ["Deal Created"] : []), "Timeline", "Token", "Payment Schedule", "Payment History", "Documents"];
 
 const formatValue = (val) => {
     const num = Number(val);
@@ -72,7 +74,7 @@ const DetailSkeleton = () => (
 
 export default function DealDetails() {
     const { id } = useLocalSearchParams();
-    const [activeTab, setActiveTab] = useState("Deal Created");
+    const [activeTab, setActiveTab] = useState(TABS[0]);
     const [refreshing, setRefreshing] = useState(false);
     const dispatch = useDispatch();
     const { currentDeal: deal, currentDealLoading: loading, currentDealError: error } = useSelector((s) => s.deals);
