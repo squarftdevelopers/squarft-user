@@ -552,9 +552,9 @@ export default function Home() {
               </View>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push('/(screens)/browse-location')}
+              onPress={() => router.push('/(screens)/location-picker')}
               accessibilityRole="button"
-              accessibilityLabel="Browse by branch or current location"
+              accessibilityLabel="Choose location on map"
               className="w-[44px] h-[44px] rounded-xl bg-white items-center justify-center"
               style={{ shadowColor: "#edabd8ff", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 30, elevation: 4 }}
             >
