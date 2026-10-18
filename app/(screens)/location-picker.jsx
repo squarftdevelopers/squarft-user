@@ -1,3 +1,4 @@
+import MapWithLayers from "../../components/MapWithLayers";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
@@ -149,7 +150,7 @@ export default function LocationPicker() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <MapView
+      <MapWithLayers component={MapView} layersTop={110}
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={{ flex: 1 }}
@@ -158,7 +159,7 @@ export default function LocationPicker() {
         onLongPress={(event) => chooseCoordinate(event.nativeEvent.coordinate)}
       >
         <Marker coordinate={coordinate} draggable onDragEnd={(event) => chooseCoordinate(event.nativeEvent.coordinate)} />
-      </MapView>
+      </MapWithLayers>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ position: "absolute", top: 48, left: 16, right: 16 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>

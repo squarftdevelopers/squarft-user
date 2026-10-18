@@ -1,9 +1,9 @@
+import { pickUpload } from "../../utils/pickUpload";
 import {
     View, Text, TouchableOpacity,
     ScrollView, Alert, ActivityIndicator, Platform, RefreshControl,
 } from "react-native";
 import { useCallback, useState } from "react";
-import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
@@ -162,13 +162,9 @@ export default function Settings() {
         }
 
         try {
-            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (!permission.granted) {
-                Alert.alert("Permission needed", "Allow photo access to update your profile picture.");
-                return;
-            }
 
-            const result = await ImagePicker.launchImageLibraryAsync({
+
+            const result = await pickUpload({
                 mediaTypes: ["images"],
                 // The native Android crop screen (UCrop) hides its "Done" button behind
                 // the edge-to-edge system bars, so crop manually there instead.

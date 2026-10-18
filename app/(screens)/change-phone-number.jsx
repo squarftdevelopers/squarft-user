@@ -94,7 +94,7 @@ export default function ChangePhoneNumber() {
                         <TextInput
                             value={newPhone}
                             onChangeText={setNewPhone}
-                            placeholder="Enter new phone number"
+                            placeholder="eg. 7867986757"
                             placeholderTextColor="#9CA3AF"
                             keyboardType="phone-pad"
                             maxLength={10}

@@ -1,8 +1,8 @@
+import { pickUpload } from "../../utils/pickUpload";
 import { View, Text, Pressable, Animated, Modal, Image, TouchableOpacity, ActivityIndicator, Alert, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useRef, useEffect, useState } from 'react';
-import * as DocumentPicker from 'expo-document-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { uploadDocument, clearUploadError } from '../../store/slices/dealsSlice';
 
@@ -133,10 +133,10 @@ const TabDocuments = memo(function TabDocuments({ documents = [], dealId }) {
         let pickedFile = null;
 
         try {
-            const result = await DocumentPicker.getDocumentAsync({
+            const result = await pickUpload({
                 type: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
                 copyToCacheDirectory: true,
-            });
+            }, true);
             if (!result.canceled && result.assets?.[0]) {
                 const asset = result.assets[0];
                 pickedFile = {

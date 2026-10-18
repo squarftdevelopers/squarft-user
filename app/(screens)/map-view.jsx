@@ -1,3 +1,4 @@
+import MapWithLayers from "../../components/MapWithLayers";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Image,
@@ -240,7 +241,7 @@ function NativeProjectMap({ items, selectedId, userLocation, onSelectProject, ro
     }, [items, selectedId]);
 
     return (
-        <MapView
+        <MapWithLayers component={MapView} layersTop={90}
             ref={mapRef}
             style={{ flex: 1 }}
             provider={PROVIDER_GOOGLE}
@@ -303,7 +304,7 @@ function NativeProjectMap({ items, selectedId, userLocation, onSelectProject, ro
                     </Marker>
                 );
             })}
-        </MapView>
+        </MapWithLayers>
     );
 }
 
