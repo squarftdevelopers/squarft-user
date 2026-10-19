@@ -109,7 +109,7 @@ function EmptySection({ icon = "home-search-outline", title, label, description,
     );
 }
 
-export default function Overview({ project }) {
+export default function Overview({ project, buildingPermission }) {
     const [builderModalVisible, setBuilderModalVisible] = useState(false);
     const [propertyDetailVisible, setPropertyDetailVisible] = useState(false);
     const [selectedVariant, setSelectedVariant] = useState(null);
@@ -269,6 +269,30 @@ export default function Overview({ project }) {
                     </View>
                 )}
             </View>
+            {buildingPermission && <View className="mx-6 mb-5 bg-white rounded-2xl p-4" style={cardShadow}>
+                <View className="flex-row items-start justify-between gap-3 mb-4">
+                    <View className="flex-1">
+                        <Text className="text-[14px] font-manrope-bold text-gray-900">Building permission</Text>
+                        <Text className="text-[12px] font-manrope-regular text-[#6B7280] mt-1">Municipal approval</Text>
+                    </View>
+                    <View className={`rounded-md px-2 py-1 ${buildingPermission.approved ? 'bg-[#EAF8EF]' : buildingPermission.status === 'Not applicable' ? 'bg-gray-100' : 'bg-[#FFF5E6]'}`}>
+                        <Text className={`text-[11px] font-manrope-bold ${buildingPermission.approved ? 'text-[#18864B]' : buildingPermission.status === 'Not applicable' ? 'text-gray-600' : 'text-[#B66A00]'}`}>{buildingPermission.status}</Text>
+                    </View>
+                </View>
+                <View className="flex-row flex-wrap">
+                    {[
+                        ['Permission number', buildingPermission.referenceNumber],
+                        ['Approval date', buildingPermission.approvalDate],
+                        ['Expected timeline', buildingPermission.expectedTime],
+                        ['Documents available', buildingPermission.documentCount > 0 ? String(buildingPermission.documentCount) : null],
+                    ].filter(([, value]) => value).map(([label, value]) => <View key={label} className="w-1/2 pr-3 mb-4">
+                        <Text className="text-[12px] font-manrope-regular text-[#6B7280] mb-1">{label}</Text>
+                        <Text className="text-[14px] font-manrope-medium text-[#1A1A1A]">{value}</Text>
+                    </View>)}
+                </View>
+                {!buildingPermission.referenceNumber && !buildingPermission.approvalDate && !buildingPermission.expectedTime && buildingPermission.documentCount === 0 && <Text className="text-[12px] font-manrope-regular text-[#6B7280]">No additional permission details have been provided.</Text>}
+            </View>}
+
             {/* About card */}
             {project.description ? <View className="mx-6 mb-3 mt-4 bg-white rounded-2xl p-4" style={cardShadow}>
                 <Text className="text-[15px] font-manrope-bold text-[#1A1A1A] mt-1 mb-3">About {maskProjectName(project.name)}</Text>

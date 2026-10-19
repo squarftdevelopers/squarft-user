@@ -995,57 +995,6 @@ export default function ProjectDetail() {
           </View>
         </View>
 
-        {buildingPermission ? (
-          <View className="mx-4 bg-white rounded-xl border border-[#DDD9FF] px-4 py-4 mb-3">
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center flex-1 mr-3">
-                <View className="w-9 h-9 rounded-full bg-[#F1EFFF] items-center justify-center mr-3">
-                  <Ionicons name="business-outline" size={18} color="#4A43EC" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[14px] font-manrope-extrabold text-[#111827]">Building permission</Text>
-                  <Text className="text-[10px] font-manrope text-[#6B7280] mt-0.5">Municipal approval</Text>
-                </View>
-              </View>
-              <View className={`rounded-full px-3 py-1 ${buildingPermission.approved ? 'bg-[#EAF8EF]' : buildingPermission.status === 'Not applicable' ? 'bg-gray-100' : 'bg-[#FFF5E6]'}`}>
-                <Text className={`text-[10px] font-manrope-bold ${buildingPermission.approved ? 'text-[#18864B]' : buildingPermission.status === 'Not applicable' ? 'text-gray-600' : 'text-[#B66A00]'}`}>
-                  {buildingPermission.status}
-                </Text>
-              </View>
-            </View>
-
-            <View className="bg-[#F8F7FF] rounded-lg px-3 py-2.5">
-              {buildingPermission.referenceNumber ? (
-                <View className="flex-row justify-between gap-4 mb-2">
-                  <Text className="text-[11px] font-manrope text-[#6B7280]">Permission number</Text>
-                  <Text className="text-[11px] font-manrope-bold text-[#111827] flex-1 text-right">{buildingPermission.referenceNumber}</Text>
-                </View>
-              ) : null}
-              {buildingPermission.approvalDate ? (
-                <View className="flex-row justify-between gap-4 mb-2">
-                  <Text className="text-[11px] font-manrope text-[#6B7280]">Approval date</Text>
-                  <Text className="text-[11px] font-manrope-bold text-[#111827]">{buildingPermission.approvalDate}</Text>
-                </View>
-              ) : null}
-              {buildingPermission.expectedTime ? (
-                <View className="flex-row justify-between gap-4 mb-2">
-                  <Text className="text-[11px] font-manrope text-[#6B7280]">Expected timeline</Text>
-                  <Text className="text-[11px] font-manrope-bold text-[#111827]">{buildingPermission.expectedTime}</Text>
-                </View>
-              ) : null}
-              {buildingPermission.documentCount > 0 ? (
-                <View className="flex-row justify-between gap-4">
-                  <Text className="text-[11px] font-manrope text-[#6B7280]">Documents available</Text>
-                  <Text className="text-[11px] font-manrope-bold text-[#111827]">{buildingPermission.documentCount}</Text>
-                </View>
-              ) : null}
-              {!buildingPermission.referenceNumber && !buildingPermission.approvalDate && !buildingPermission.expectedTime && buildingPermission.documentCount === 0 ? (
-                <Text className="text-[11px] font-manrope text-[#6B7280]">No additional permission details have been provided.</Text>
-              ) : null}
-            </View>
-          </View>
-        ) : null}
-
         {/* Divider */}
         <View className="mx-4 mb-6 mt-1 h-px bg-gray-200" />
 
@@ -1067,7 +1016,7 @@ export default function ProjectDetail() {
         </View>
 
         {/* Tab Content */}
-        {activeTab === "Overview" && <Overview project={project} />}
+        {activeTab === "Overview" && <Overview project={project} buildingPermission={buildingPermission} />}
         {activeTab === "Highlights" && <Highlights project={project} />}
         {activeTab === "Property Tour" && <PropertyTour project={project} />}
       </ScrollView>
