@@ -235,6 +235,7 @@ export default function Overview({ project, buildingPermission }) {
                 onClose={() => setPropertyDetailVisible(false)}
                 project={project}
                 variant={selectedVariant}
+                showVisitAction={false}
             />
 
             {/* Other details */}

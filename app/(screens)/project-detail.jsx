@@ -771,7 +771,7 @@ export default function ProjectDetail() {
   const hasRating = Boolean(project.rating);
   const hasPossession = Boolean(cleanText(project.possession));
   const hasBuilder = Boolean(project.builder && project.developerId);
-  const hasBookableUnits = normalizedVariants.length > 0;
+  const hasBookableUnits = normalizedVariants.length > 0 || (resale || []).some(property => property.id && !['booked', 'locked', 'sold'].includes(String(property.availability_status || property.status || '').toLowerCase()));
   const buildingPermission = getBuildingPermissionInfo(activeApiProject || base);
 
   const savedProjectData = {
@@ -931,7 +931,7 @@ export default function ProjectDetail() {
                     View on map
                   </Text>
                 </View>
-                <ReraStatusBadge approved={project.rera} textClassName="text-[10px]" />
+                <ReraStatusBadge approved={project.rera} unapprovedLabel="RERA not approved" textClassName="text-[10px]" />
               </View>
               <View className="w-9 h-9 rounded-full bg-[#F0EEFF] items-center justify-center ml-2">
                 <Ionicons name="map-outline" size={19} color="#4A43EC" />

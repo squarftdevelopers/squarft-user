@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, StyleSheet, Animated, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, Animated, Modal, RefreshControl } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { LinearGradient } from "expo-linear-gradient";
@@ -75,6 +75,7 @@ const DetailSkeleton = () => (
 export default function DealDetails() {
     const { id } = useLocalSearchParams();
     const [activeTab, setActiveTab] = useState(TABS[0]);
+    const [showDealId, setShowDealId] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const dispatch = useDispatch();
     const { currentDeal: deal, currentDealLoading: loading, currentDealError: error } = useSelector((s) => s.deals);
@@ -128,6 +129,16 @@ export default function DealDetails() {
 
     return (
         <View className="flex-1 bg-white">
+            <Modal visible={showDealId} transparent animationType="fade" onRequestClose={() => setShowDealId(false)}>
+                <View className="flex-1 justify-center bg-black/40 px-6">
+                    <View accessibilityViewIsModal className="rounded-2xl bg-white p-5">
+                        <Text className="text-[16px] font-manrope-bold text-[#111827] mb-2">Deal ID</Text>
+                        <Text className="text-[12px] font-manrope-medium text-[#6B7280] mb-3">Touch and hold the ID to copy it.</Text>
+                        <Text selectable className="text-[14px] font-manrope-medium text-[#4F48ED] leading-6">{deal.id || id}</Text>
+                        <Pressable onPress={() => setShowDealId(false)} className="mt-5 rounded-xl bg-[#4F48ED] py-3 items-center"><Text className="text-white font-manrope-bold">Done</Text></Pressable>
+                    </View>
+                </View>
+            </Modal>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 alwaysBounceVertical={true}
@@ -152,13 +163,17 @@ export default function DealDetails() {
                     <View className="flex-row items-center mb-4 relative z-10">
                         <Pressable
                             onPress={() => router.back()}
-                            className="w-[36px] h-[36px] bg-[rgba(255,255,255,0.15)] rounded-[10px] items-center justify-center mr-3"
+                            className="shrink-0 w-[36px] h-[36px] bg-[rgba(255,255,255,0.15)] rounded-[10px] items-center justify-center mr-3"
                         >
                             <Ionicons name="arrow-back" size={20} color="white" />
                         </Pressable>
-                        <Text className="text-[14px] font-manrope-medium text-white/90">
-                            Deal #{deal.id}
-                        </Text>
+                        <Pressable onPress={() => setShowDealId(true)} accessibilityRole="button" accessibilityLabel="View and copy full deal ID" className="min-w-0 flex-1 flex-row items-center justify-between gap-2">
+                            <View className="min-w-0 flex-1">
+                                <Text className="text-[14px] font-manrope-bold text-white" numberOfLines={1}>Deal details</Text>
+                                <Text className="mt-0.5 text-[11px] font-manrope-medium text-white/80" numberOfLines={1}>#{String(deal.id || id).slice(0, 8).toUpperCase()}</Text>
+                            </View>
+                            <Ionicons name="information-circle-outline" size={20} color="white" />
+                        </Pressable>
                     </View>
 
                     <View className="mb-4 relative z-10">

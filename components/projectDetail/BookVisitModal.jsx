@@ -1,3 +1,4 @@
+import { buildVisitOptions } from "../../services/visitBookingOptions";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View, Text, Image, TouchableOpacity } from "react-native";
 import { SettledBackdrop, SettledModal } from "../SettledModal";
@@ -30,39 +31,6 @@ function getImageSource(image, fallback) {
     return image || fallback;
 }
 
-function buildVisitOptions(project) {
-    const rawOptions = project?.floorPlans?.length ? project.floorPlans : (project?.variants || []);
-    // A project-panel project has one inventory row per physical unit. Show
-    // each configuration once, rather than exposing every duplicate unit.
-    const configuredOptions = rawOptions.filter((option) => String(option?.configuration || '').trim());
-    const options = configuredOptions.length > 0 ? configuredOptions : rawOptions;
-    const grouped = new Map();
-
-    options.forEach((option) => {
-        const label = getProjectPropertyCardConfig(option) || option.title || option.type || "Property";
-        const key = label.trim().toLowerCase();
-        const existing = grouped.get(key);
-        const linkedPropertyId = option.property_id || option.source_property_id || (!option.configuration ? option.id : null);
-
-        if (!existing) {
-            grouped.set(key, {
-                ...option,
-                title: label,
-                property_id: linkedPropertyId,
-                unitCount: 1,
-            });
-            return;
-        }
-
-        existing.unitCount += 1;
-        // Prefer a representative that is linked to a bookable property.
-        if (!existing.property_id && linkedPropertyId) {
-            existing.property_id = linkedPropertyId;
-        }
-    });
-
-    return [...grouped.values()];
-}
 
 export default function BookVisitModal({ visible, onClose, project }) {
     const insets = useSafeAreaInsets();
@@ -80,7 +48,8 @@ export default function BookVisitModal({ visible, onClose, project }) {
     const handleContinue = () => {
         if (selected.length === 0) return;
 
-        const selectedOptions = selected.map((index) => visitOptions[index]).filter(Boolean);
+        const selectedOptions = visitOptions.filter(option => selected.includes(option.visitKey) && !['booked','locked','sold'].includes(String(option.availability_status || option.status || '').toLowerCase()));
+        if (!selectedOptions.length) return;
         const timestamp = Date.now();
 
         selectedOptions.forEach((option, index) => {
@@ -97,8 +66,8 @@ export default function BookVisitModal({ visible, onClose, project }) {
                 city: project.city,
                 area: project.area,
                 location: project.location,
-                image: getImageSource(option.image, project.imageMain),
-                imageMain: getImageSource(option.image, project.imageMain),
+                image: getImageSource(option.image || option.cover_image, project.imageMain),
+                imageMain: getImageSource(option.image || option.cover_image, project.imageMain),
                 imageThumb: project.imageThumb,
                 variant: variantType,
                 selectedUnits: [variantType],
@@ -145,21 +114,25 @@ export default function BookVisitModal({ visible, onClose, project }) {
 
             {/* Scrollable variants */}
             <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
-                {visitOptions.map((v, i) => {
-                    const isSelected = selected.includes(i);
+                {visitOptions.map((v) => {
+                    const isSelected = selected.includes(v.visitKey);
+                    const unavailable = ['booked','locked','sold'].includes(String(v.availability_status || v.status || '').toLowerCase());
                     const priceText = v.priceRange || formatCompactPrice(v.price ?? v.base_price ?? v.price_from);
                     const areaText = v.area || (v.area_sqft ? `${v.area_sqft} SQ.FT.` : (project.areaSqft ? `${project.areaSqft} SQ.FT.` : '\u2014'));
                     return (
                         <TouchableOpacity
-                            key={i}
-                            onPress={() => toggle(i)}
-                            className="flex-row items-center bg-white border border-gray-100 rounded-2xl p-3 mb-3"
+                            key={v.visitKey}
+                            disabled={unavailable || !v.property_id}
+                            onPress={() => toggle(v.visitKey)}
+                            className={`flex-row items-center bg-white border border-gray-100 rounded-2xl p-3 mb-3 ${unavailable ? 'opacity-40' : ''}`}
                         >
                             <View className="w-24 h-24 rounded-xl bg-gray-100 mr-3 overflow-hidden">
                                 <Image source={getImageSource(v.image, project.imageMain)} className="w-full h-full" resizeMode="cover" />
                             </View>
                             <View className="flex-1">
                                 <Text className="text-[14px] font-manrope-bold text-gray-900 mb-0.5">{getProjectPropertyCardConfig(v) || v.title || v.type || "Property"}</Text>
+                                {v.isResale && <Text className="text-[10px] font-manrope-bold text-amber-600 mb-1">Resale</Text>}
+                                {unavailable && <Text className="text-[10px] font-manrope-bold text-red-600 mb-1">Unavailable</Text>}
                                 {priceText ? (
                                     <Text className="text-[13px] font-inter-bold text-indigo-600 mb-0.5">
                                         {priceText}

@@ -106,6 +106,7 @@ export default function PropertyDetailModal({
     project,
     variant,
     readOnly = false,
+    showVisitAction = false,
 }) {
     const insets = useSafeAreaInsets();
     const dispatch = useDispatch();
@@ -423,7 +424,7 @@ export default function PropertyDetailModal({
                     </View>
                 </ScrollView>
 
-                {!readOnly && (
+                {!readOnly && showVisitAction && (
                 <View className="px-5 pt-3 border-t border-gray-100" style={{ paddingBottom: insets.bottom || 2, backgroundColor: '#fff' }}>
                     <TouchableOpacity
                         onPress={() => {
