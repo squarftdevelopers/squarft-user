@@ -85,15 +85,15 @@ function AmenityItem({ label }) {
         color: "#003D9B",
     };
     return (
-        <View className="flex-row items-center gap-3 w-[50%] mb-4">
-            <View className="w-10 h-10 rounded-[14px] bg-[#F1F3FF] items-center justify-center">
+        <View className="flex-row items-center gap-2 w-[50%] mb-2.5">
+            <View className="w-7 h-7 rounded-[8px] bg-[#F1F3FF] items-center justify-center">
                 <MaterialCommunityIcons
                     name={config.icon}
-                    size={18}
+                    size={14}
                     color={config.color}
                 />
             </View>
-            <Text className="text-[13px] font-manrope-medium text-[#101010] flex-1">
+            <Text className="text-[11px] font-manrope-medium text-[#101010] flex-1">
                 {label}
             </Text>
         </View>
@@ -159,14 +159,11 @@ export default function PropertyDetailModal({
     const isAdded = bookedVisits.some((v) => v.id === variantId);
 
     const areaValue = variant.area_sqft ?? variant.total_area_sqft ?? project.areaSqft ?? project.area_sqft ?? null;
-    const possessionValue = variant.possession_status || variant.possession || project.possessionStatus || project.possession || "\u2014";
+    const rawPossession = variant.possession_status || variant.possession || project.possessionStatus || project.possession || '—';
+    const possessionValue = String(rawPossession).replace(/[_-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
     const towerValue = variant.tower_no || variant.tower || project.tower_no || project.towers || "\u2014";
     const basePriceValue = variant.base_price ?? variant.price ?? variant.priceRange ?? variant.price_from ?? null;
-    const priceText = basePriceValue !== null && basePriceValue !== undefined && basePriceValue !== ""
-        ? (typeof basePriceValue === 'number'
-            ? formatCompactPrice(basePriceValue)
-            : basePriceValue)
-        : "Contact for price";
+    const priceText = formatCompactPrice(basePriceValue) || (typeof basePriceValue === 'string' && basePriceValue.trim() ? basePriceValue : 'Contact for price');
     const areaText = variant.area || (areaValue ? `${areaValue} sq.ft.` : "\u2014");
     const floorPlanSource = getImageSource(variant.floor_plan_url || variant.floor_plan_image, null);
     const propertyImages = [...new Set(collectDynamicImages(variant))];
@@ -222,26 +219,26 @@ export default function PropertyDetailModal({
         <>
             <SimpleBottomSheet visible={visible && !sheetSuspended} onClose={handleClose} maxHeightPercent="88%">
                 {/* Header Section mimicking original layout handle style */}
-                <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
+                <View className="flex-row items-center justify-between px-4 pt-1 pb-3">
                     <TouchableOpacity onPress={handleClose}>
-                        <Ionicons name="close" size={22} color="#374151" />
+                        <Ionicons name="close" size={20} color="#374151" />
                     </TouchableOpacity>
-                    <Text className="text-[17px] font-manrope-bold text-[#111827]">Property Details</Text>
+                    <Text className="text-[15px] font-manrope-bold text-[#111827]">Property Details</Text>
                     <View style={{ width: 22 }} />
                 </View>
 
     
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    className="mx-5 rounded-2xl mb-4 border border-gray-300"
-                    contentContainerStyle={{ paddingBottom: 16 }}
+                    className="mx-4 rounded-xl mb-3 border border-gray-100"
+                    contentContainerStyle={{ paddingBottom: 10 }}
                 >
                     {/* Dynamic property gallery */}
                     <TouchableOpacity
                         activeOpacity={heroImage ? 0.9 : 1}
                         disabled={!heroImage}
                         onPress={openImageViewer}
-                        style={{ height: 145, overflow: "hidden", backgroundColor: "#F4F7FF" }}
+                        style={{ height: 120, overflow: "hidden", backgroundColor: "#F4F7FF" }}
                     >
                         {heroImage ? (
                             <Image
@@ -269,14 +266,14 @@ export default function PropertyDetailModal({
                         <View
                             style={{
                                 position: "absolute",
-                                top: 12,
-                                left: 12,
+                                top: 8,
+                                left: 8,
                                 flexDirection: "row",
                                 alignItems: "center",
                                 backgroundColor: "#fff",
                                 borderRadius: 30,
-                                paddingHorizontal: 12,
-                                paddingVertical: 6,
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
                                 gap: 3,
                                 shadowColor: "#000",
                                 shadowOpacity: 0.1,
@@ -284,8 +281,8 @@ export default function PropertyDetailModal({
                                 elevation: 3,
                             }}
                         >
-                            <MaterialCommunityIcons name="check-decagram" size={16} color="#0052CC" />
-                            <Text style={{ fontSize: 10, fontWeight: "700", color: "#0052CC", letterSpacing: 0.2 }}>
+                            <MaterialCommunityIcons name="check-decagram" size={12} color="#0052CC" />
+                            <Text style={{ fontSize: 8, fontWeight: "700", color: "#0052CC", letterSpacing: 0.2 }}>
                                 SQUARFT VERIFIED
                             </Text>
                         </View>
@@ -304,46 +301,26 @@ export default function PropertyDetailModal({
                             >
                                 <Ionicons
                                     name={isSaved ? "heart" : "heart-outline"}
-                                    size={24}
+                                    size={18}
                                     color={isSaved ? "#EF4444" : "#fff"}
                                 />
                             </TouchableOpacity>
                         )}
                     </TouchableOpacity>
 
-                    {/* Possession Info Row */}
-                    <View className="flex-row items-center gap-5 mx-5 mt-3 mb-3.5">
-                        <Text className="text-[12px] font-manrope-regular text-gray-500">
-                            Possession: {possessionValue}
-                        </Text>
-                        <Text className="text-[12px] font-manrope-regular text-gray-500">
-                            • Base Price: {priceText}
-                        </Text>
-                    </View>
-
-                    <View
-                        style={{
-                            marginHorizontal: 20,
-                            marginBottom: 9,
-                            borderBottomWidth: 1,
-                            borderBottomColor: "#D1D5DB",
-                            borderStyle: "dashed",
-                        }}
-                    />
-
                     {/* Pricing & Floor Plan Grid */}
-                    <View className="mx-5 mb-2">
-                        <View className="flex-row items-center justify-between mb-2">
+                    <View className="mx-3 mt-3 mb-2">
+                        <View className="flex-row flex-wrap items-center justify-between gap-2 mb-2">
                             <View>
                                 <Text className="text-[12px] font-manrope-bold text-gray-500">{variantType}</Text>
-                                <Text className="text-[16px] font-manrope-extrabold text-[#0F172A]">
+                                <Text className="text-[15px] font-manrope-bold text-[#0F172A]">
                                     {priceText}
                                 </Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => floorPlanSource && setFloorPlanVisible((v) => !v)}
                                 disabled={!floorPlanSource}
-                                className="flex-row items-center gap-1.5 rounded-xl px-3 py-3"
+                                className="flex-row items-center gap-1 rounded-lg px-2 py-2"
                                 style={{ backgroundColor: floorPlanSource ? (floorPlanVisible ? "#4A43EC" : "#DAE2FF") : "#F3F4F6" }}
                             >
                                 <MaterialCommunityIcons
@@ -352,10 +329,10 @@ export default function PropertyDetailModal({
                                     color={!floorPlanSource ? "#9CA3AF" : floorPlanVisible ? "#fff" : "#4A43EC"}
                                 />
                                 <Text
-                                    className="text-[12px] font-manrope-bold"
+                                    className="text-[10px] font-manrope-bold"
                                     style={{ color: !floorPlanSource ? "#9CA3AF" : floorPlanVisible ? "#fff" : "#4A43EC" }}
                                 >
-                                    {!floorPlanSource ? "Floor Plan Unavailable" : floorPlanVisible ? "Hide Floor Plan" : "See Floor Plan"}
+                                    {!floorPlanSource ? "No floor plan" : floorPlanVisible ? "Hide Floor Plan" : "See Floor Plan"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -392,34 +369,29 @@ export default function PropertyDetailModal({
                         )}
                     </View>
 
-                    {/* Stats Metrics Matrix */}
-                    <View className="flex-row flex-wrap mx-4 justify-between mb-3 mt-4">
+                    <View className="mx-3 mt-2 mb-3 rounded-xl border border-gray-100 px-3">
                         {[
-                            { label: "AREA", value: areaText },
-                            { label: "POSSESSION", value: possessionValue },
-                            { label: "TOWER", value: towerValue },
-                            { label: "INVENTORY", value: inventoryValue },
-                        ].map((item) => (
-                            <View
-                                key={item.label}
-                                className="bg-[#F1F3FF] border border-[#E0E8FF] rounded-2xl p-4 py-4 mb-4"
-                                style={{ width: (width - 68) / 2 - 6 }}
-                            >
-                                <Text className="text-[10px] font-manrope-bold text-gray-400 tracking-widest">{item.label}</Text>
-                                <Text className="text-[16px] font-manrope-bold text-[#041B3C]">{item.value}</Text>
+                            { label: 'Area', value: areaText },
+                            { label: 'Possession', value: possessionValue },
+                            { label: 'Tower', value: towerValue },
+                            { label: 'Inventory', value: inventoryValue },
+                        ].map((item, index) => (
+                            <View key={item.label} className={`flex-row items-start justify-between gap-3 py-2.5 ${index ? 'border-t border-gray-100' : ''}`}>
+                                <Text className="text-[11px] font-manrope-medium text-gray-500">{item.label}</Text>
+                                <Text className="flex-1 text-right text-[12px] font-manrope-semibold text-[#111827]">{item.value}</Text>
                             </View>
                         ))}
                     </View>
 
                     {/* Amenities Collection */}
-                    <View className="mx-4 bg-white border border-gray-100 rounded-2xl p-4 px-5 mb-2">
-                        <Text className="text-[15px] font-manrope-regular text-[#1A1A1A] mb-4">World-Class Amenities</Text>
+                    <View className="mx-3 bg-white border border-gray-100 rounded-xl p-3 mb-2">
+                        <Text className="text-[12px] font-manrope-bold text-[#1A1A1A] mb-2.5">Amenities</Text>
                         {amenitiesList.length > 0 ? (
                             <View className="flex-row flex-wrap">
                                 {amenitiesList.map((a, i) => <AmenityItem key={i} label={a} />)}
                             </View>
                         ) : (
-                            <Text className="text-[13px] font-manrope-regular text-gray-500">No amenities listed for this unit yet.</Text>
+                            <Text className="text-[11px] font-manrope-regular text-gray-500">No amenities listed for this unit yet.</Text>
                         )}
                     </View>
                 </ScrollView>

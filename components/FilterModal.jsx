@@ -209,6 +209,10 @@ export default function FilterModal() {
     const [localAddress, setLocalAddress] = useState(address);
     const [geocoding, setGeocoding] = useState(false);
     const subTypeEnabled = propertyTypes.some((t) => SUB_TYPE_ELIGIBLE_PROPERTY_TYPES.includes(t));
+    const plotOnly = propertyTypes.length === 1 && propertyTypes[0] === 'Plot';
+    useEffect(() => {
+        if (plotOnly && (areaRange[0] !== AREA_MIN || areaRange[1] !== AREA_MAX)) dispatch(setAreaRange([AREA_MIN, AREA_MAX]));
+    }, [dispatch, plotOnly, areaRange]);
     const [sliderDragging, setSliderDragging] = useState(false);
     const handleSliderDragStart = () => setSliderDragging(true);
     const handleSliderDragEnd = () => setSliderDragging(false);
@@ -322,19 +326,21 @@ export default function FilterModal() {
                             {PROPERTY_TYPES.map((t) => <ChipButton key={t.type} label={t.label} selected={propertyTypes.includes(t.type)} onPress={() => dispatch(togglePropertyType(t.type))} />)}
                         </View>
 
+                        {subTypeEnabled && <>
                         {/* Sub Type */}
-                        <Text style={{ fontSize: 15, fontWeight: '600', color: subTypeEnabled ? '#111827' : '#9CA3AF', marginTop: 8, marginBottom: 10 }}>Property Sub Type</Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8, opacity: subTypeEnabled ? 1 : 0.4 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827', marginTop: 8, marginBottom: 10 }}>Property Sub Type</Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
                             {SUB_TYPES.map((t) => (
                                 <ChipButton
                                     key={t}
                                     label={t}
                                     selected={propertySubTypes.includes(t)}
-                                    disabled={!subTypeEnabled}
                                     onPress={() => dispatch(toggleSubType(t))}
                                 />
                             ))}
                         </View>
+
+                        </>}
 
                         {/* Budget Range */}
                         <BudgetRangeSection
@@ -345,12 +351,12 @@ export default function FilterModal() {
                         />
 
                         {/* Area Range */}
-                        <AreaRangeSection
+                        {!plotOnly && <AreaRangeSection
                             areaRange={areaRange}
                             onChange={(v) => dispatch(setAreaRange(v))}
                             onDragStart={handleSliderDragStart}
                             onDragEnd={handleSliderDragEnd}
-                        />
+                        />}
 
                         {/* Possession Status */}
                         <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 10 }}>Possession Status</Text>
