@@ -6,6 +6,7 @@ import { notificationApi } from "./notificationApi";
 const USER_APP_KEY = "user_app";
 
 let lastRegisteredExpoToken = null;
+let lastRegisteredAuthToken = null;
 
 const logPushNotification = (message, details = {}) => {
     console.log(`[PushNotifications] ${message}`, details);
@@ -126,7 +127,7 @@ export const registerForPushNotificationsAsync = async (authToken) => {
         expoPushToken: maskExpoPushToken(expoPushToken),
     });
 
-    if (!expoPushToken || expoPushToken === lastRegisteredExpoToken) {
+    if (!expoPushToken || (expoPushToken === lastRegisteredExpoToken && authToken === lastRegisteredAuthToken)) {
         logPushNotification("Backend registration skipped", {
             reason: !expoPushToken ? "missing-expo-token" : "already-registered-this-session",
             expoPushToken: maskExpoPushToken(expoPushToken),
@@ -141,6 +142,7 @@ export const registerForPushNotificationsAsync = async (authToken) => {
     });
 
     lastRegisteredExpoToken = expoPushToken;
+    lastRegisteredAuthToken = authToken;
     logPushNotification("Backend registration completed", {
         appKey: USER_APP_KEY,
         tokenId: response?.data?.id || null,

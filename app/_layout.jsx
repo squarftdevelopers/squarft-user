@@ -1,7 +1,7 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Stack, usePathname, useRootNavigationState, useRouter } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
@@ -162,10 +162,9 @@ function ActivityTrackerHydrator() {
 }
 
 export default function RootLayout() {
-    const rootNavigationState = useRootNavigationState();
     const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
-    const [fontsLoaded] = useFonts({
+    const [fontsLoaded, fontError] = useFonts({
         ...FontAwesome.font,
         ...Ionicons.font,
         ...MaterialIcons.font,
@@ -198,7 +197,7 @@ export default function RootLayout() {
         NavigationBar.setButtonStyleAsync("dark").catch(() => { });
     }, []);
 
-    if (!fontsLoaded || !rootNavigationState?.key) return null;
+    if (!fontsLoaded && !fontError) return null;
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>

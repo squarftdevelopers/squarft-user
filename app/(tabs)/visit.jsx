@@ -158,7 +158,7 @@ const ALL_VISIT_STATUSES = ["pending", "pending_confirmation", "confirmed", "com
 export default function Visit() {
   const router = useRouter();
   const [detailVisit, setDetailVisit] = useState(null);
-  const { tab } = useLocalSearchParams();
+  const { tab, visitId: notificationVisitId } = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState("Book visit");
   const bookedSiteVisits = useSelector((state) => state.properties.bookedSiteVisits);
   const reduxUpcomingVisits = useSelector((state) => state.properties.upcomingSiteVisits || []);
@@ -169,8 +169,8 @@ export default function Visit() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (tab === "Book visit") {
-      setActiveTab("Book visit");
+    if (["Book visit", "Past"].includes(tab)) {
+      setActiveTab(tab);
     } else {
       setActiveTab("Upcoming");
     }
@@ -282,6 +282,16 @@ export default function Visit() {
     .sort((a, b) => getVisitTimestamp(b) - getVisitTimestamp(a));
 
   const bottomSheetModalRef = useRef(null);
+  const openedNotificationVisit = useRef(null);
+  useEffect(() => {
+    if (!notificationVisitId || visitsLoading || openedNotificationVisit.current === notificationVisitId) return;
+    const visit = apiVisitsFormatted.find((item) => String(item.id) === String(notificationVisitId));
+    if (!visit) return;
+    openedNotificationVisit.current = notificationVisitId;
+    setSelectedVisit(visit);
+    bottomSheetModalRef.current?.present();
+  }, [notificationVisitId, visitsLoading, apiVisitsFormatted]);
+
 
   const openModal = useCallback(() => {
     bottomSheetModalRef.current?.present();

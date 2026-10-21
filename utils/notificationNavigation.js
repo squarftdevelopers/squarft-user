@@ -12,7 +12,7 @@ import { NOTIFICATION_EVENTS } from '../constants/notificationTypes';
  * @param {object} data - Additional notification data
  */
 export const handleNotificationNavigation = (deepLink, data = {}) => {
-  if (!deepLink) {
+  if (typeof deepLink !== 'string' || deepLink.includes('{{') || deepLink.startsWith('//')) {
     console.warn('[NotificationNavigation] No deep link provided');
     return;
   }
@@ -31,6 +31,13 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
 
         // Home
         '/home': '/(tabs)/home',
+        '/id-verification': '/(screens)/id-verification',
+        '/(screens)/id-verification': '/(screens)/id-verification',
+        '/(screens)/notifications': '/(screens)/notifications',
+        '/(tabs)/home': '/(tabs)/home',
+        '/(tabs)/visit': '/(tabs)/visit',
+        '/(tabs)/settings': '/(tabs)/settings',
+        '/(tabs)/myDeals': '/(tabs)/myDeals',
 
         // Properties
         '/shortlist': '/(screens)/saved-properties',
@@ -49,7 +56,7 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
         const propertyId = deepLink.split('/')[2];
         router.push({
           pathname: '/(screens)/project-detail',
-          params: { id: propertyId, ...data }
+          params: { id: data.project_id || data.projectId || propertyId }
         });
         return;
       }
@@ -58,8 +65,15 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
         const projectId = deepLink.split('/')[2];
         router.push({
           pathname: '/(screens)/project-detail',
-          params: { id: projectId, ...data }
+          params: { id: projectId }
         });
+        return;
+      }
+
+      if (deepLink.startsWith('/visits/book/')) {
+        router.push(data.project_id || data.projectId
+          ? { pathname: '/(screens)/project-detail', params: { id: data.project_id || data.projectId } }
+          : { pathname: '/(screens)/book-site-visit', params: { propertyId: deepLink.split('/')[3] } });
         return;
       }
 
@@ -69,8 +83,8 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
         
         if (deepLink.includes('/feedback')) {
           router.push({
-            pathname: '/(screens)/rating-submitted',
-            params: { visitId, ...data }
+            pathname: '/(screens)/review',
+            params: { visitId, tab: /completed|cancelled/i.test(data.eventKey || data.event || '') ? 'Past' : 'Upcoming' }
           });
           return;
         }
@@ -85,16 +99,7 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
 
         router.push({
           pathname: '/(tabs)/visit',
-          params: { visitId, ...data }
-        });
-        return;
-      }
-
-      if (deepLink.startsWith('/visits/book/')) {
-        const propertyId = deepLink.split('/')[3];
-        router.push({
-          pathname: '/(screens)/book-site-visit',
-          params: { propertyId, ...data }
+          params: { visitId, tab: /completed|cancelled/i.test(data.eventKey || data.event || '') ? 'Past' : 'Upcoming' }
         });
         return;
       }
@@ -103,10 +108,10 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
         const segments = deepLink.split('/');
         const dealId = segments[2];
         
-        // Currently no deals screen, navigate to My Activity
+        // Open the existing deal workspace and its relevant section.
         router.push({
-          pathname: '/(tabs)/myActivity',
-          params: { dealId, ...data }
+          pathname: '/(tabs)/myDeals/[id]',
+          params: { id: dealId, tab: deepLink.includes('/payments') ? 'Payment Schedule' : /documents|agreement|quotation/.test(deepLink) ? 'Documents' : 'Timeline' }
         });
         return;
       }
@@ -138,7 +143,7 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
       }
 
       // Try to navigate directly if route exists
-      router.push(deepLink);
+      router.push('/(screens)/notifications');
     } else {
       console.warn('[NotificationNavigation] Invalid deep link format:', deepLink);
     }
@@ -155,10 +160,10 @@ export const handleNotificationNavigation = (deepLink, data = {}) => {
  */
 export const getNavigationConfig = (eventKey, payload = {}) => {
   const {
-    property_id,
-    project_id,
-    visit_id,
-    deal_id,
+    property_id = payload.propertyId,
+    project_id = payload.projectId,
+    visit_id = payload.visitId,
+    deal_id = payload.dealId,
     search_id,
     ticket_id,
   } = payload;
@@ -183,7 +188,7 @@ export const getNavigationConfig = (eventKey, payload = {}) => {
       if (property_id || project_id) {
         return {
           pathname: '/(screens)/project-detail',
-          params: { id: property_id || project_id }
+          params: { id: project_id || property_id }
         };
       }
       return { pathname: '/(tabs)/home' };
@@ -215,14 +220,14 @@ export const getNavigationConfig = (eventKey, payload = {}) => {
     case NOTIFICATION_EVENTS.VISIT_CANCELLED:
       return {
         pathname: '/(tabs)/visit',
-        params: visit_id ? { visitId: visit_id } : {}
+        params: { ...(visit_id ? { visitId: visit_id } : {}), tab: eventKey === 'VISIT_CANCELLED' ? 'Past' : 'Upcoming' }
       };
 
     case NOTIFICATION_EVENTS.VISIT_COMPLETED:
     case NOTIFICATION_EVENTS.VISIT_FEEDBACK_REQUEST:
       if (visit_id) {
         return {
-          pathname: '/(screens)/rating-submitted',
+          pathname: '/(screens)/review',
           params: { visitId: visit_id }
         };
       }
@@ -257,8 +262,8 @@ export const getNavigationConfig = (eventKey, payload = {}) => {
     case NOTIFICATION_EVENTS.DOCUMENT_APPROVED:
     case NOTIFICATION_EVENTS.AGREEMENT_READY:
       return {
-        pathname: '/(tabs)/myActivity',
-        params: deal_id ? { dealId: deal_id } : {}
+        pathname: deal_id ? '/(tabs)/myDeals/[id]' : '/(tabs)/myDeals',
+        params: deal_id ? { id: deal_id, tab: /PAYMENT|MILESTONE/.test(eventKey) ? 'Payment Schedule' : /DOCUMENT|AGREEMENT|QUOTATION/.test(eventKey) ? 'Documents' : 'Timeline' } : {}
       };
 
     // Support
@@ -294,7 +299,9 @@ export const getNavigationConfig = (eventKey, payload = {}) => {
 export const navigateToNotification = (notification) => {
   if (!notification) return;
 
-  const { eventKey, deepLink, data } = notification;
+  const data = notification.data || notification.metadata || notification;
+  const eventKey = notification.eventKey || data.eventKey || data.event_key || data.event;
+  const deepLink = notification.deepLink || data.deepLink || data.route;
 
   // Prefer deep link if provided
   if (deepLink) {

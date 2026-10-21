@@ -6,6 +6,8 @@ const ANIMATION_DURATION_MS = 1500;
 const FADE_DURATION_MS = 280;
 
 export default function AnimatedSplashScreen({ onFinish }) {
+    const finish = useRef(onFinish);
+    finish.current = onFinish;
     const opacity = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -14,11 +16,11 @@ export default function AnimatedSplashScreen({ onFinish }) {
                 toValue: 0,
                 duration: FADE_DURATION_MS,
                 useNativeDriver: true,
-            }).start(() => onFinish?.());
+            }).start(() => finish.current?.());
         }, ANIMATION_DURATION_MS);
 
         return () => clearTimeout(timer);
-    }, [onFinish, opacity]);
+    }, [opacity]);
 
     return (
         <Animated.View style={[styles.container, { opacity }]}>

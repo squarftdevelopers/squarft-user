@@ -17,9 +17,9 @@ export const normalizeNotification = (item) => ({
   watched: Boolean(item.is_read),
   createdAt: item.sent_at,
   time: item.sent_at ? new Date(item.sent_at).toLocaleString() : '',
-  eventKey: item.metadata?.eventKey || item.type,
+  eventKey: item.metadata?.eventKey || item.metadata?.event_key || item.metadata?.event || item.type,
   category: item.metadata?.category || EVENT_CATEGORY_MAP[item.type] || 'info',
-  deepLink: item.metadata?.deepLink,
+  deepLink: item.metadata?.deepLink || item.metadata?.route,
   data: item.metadata || {},
 });
 

@@ -73,8 +73,9 @@ const DetailSkeleton = () => (
 );
 
 export default function DealDetails() {
-    const { id } = useLocalSearchParams();
-    const [activeTab, setActiveTab] = useState(TABS[0]);
+    const { id, tab } = useLocalSearchParams();
+    const [activeTab, setActiveTab] = useState(TABS.includes(tab) ? tab : TABS[0]);
+    useEffect(() => { if (TABS.includes(tab)) setActiveTab(tab); }, [tab]);
     const [showDealId, setShowDealId] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const dispatch = useDispatch();

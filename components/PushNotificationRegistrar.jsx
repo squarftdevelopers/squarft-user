@@ -1,3 +1,4 @@
+import { useNotificationResponse } from "../services/useNotificationResponse";
 import { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import * as Notifications from "expo-notifications";
@@ -9,7 +10,10 @@ export default function PushNotificationRegistrar() {
     const { isLoggedIn, token } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
     const notificationListener = useRef();
-    const responseListener = useRef();
+    useNotificationResponse((response) => {
+        const data = response.notification.request.content.data || {};
+        navigateToNotification({ ...data, data });
+    });
 
     useEffect(() => {
         console.log("[PushNotificationRegistrar] Auth state changed", {
@@ -54,25 +58,6 @@ export default function PushNotificationRegistrar() {
             dispatch(fetchNotificationsThunk(1));
         });
 
-        // Listen for notification tap (app opened from notification)
-        responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-            console.log("[PushNotificationRegistrar] Notification tapped", {
-                actionIdentifier: response.actionIdentifier,
-            });
-
-            const { data } = response.notification.request.content;
-
-            // Navigate to appropriate screen
-            if (data) {
-                const notificationPayload = {
-                    eventKey: data.eventKey,
-                    deepLink: data.deepLink,
-                    data,
-                };
-                navigateToNotification(notificationPayload);
-            }
-        });
-
         return () => {
             cancelled = true;
             console.log("[PushNotificationRegistrar] Registration effect cleaned up");
@@ -85,13 +70,7 @@ export default function PushNotificationRegistrar() {
                     console.warn("[PushNotificationRegistrar] Failed to remove notification listener:", error.message);
                 }
             }
-            if (responseListener.current) {
-                try {
-                    responseListener.current.remove();
-                } catch (error) {
-                    console.warn("[PushNotificationRegistrar] Failed to remove response listener:", error.message);
-                }
-            }
+
         };
     }, [isLoggedIn, token, dispatch]);
 
