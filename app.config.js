@@ -1,17 +1,19 @@
+
 require("dotenv").config();
 
-const googleMapsApiKey =
-  process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY ||
-  process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
-  process.env.GOOGLE_MAPS_API_KEY ||
-  "";
+const androidGoogleMapsApiKey =
+  process.env.GOOGLE_MAPS_ANDROID_API_KEY || "";
+
+const iosGoogleMapsApiKey =
+  process.env.GOOGLE_MAPS_IOS_API_KEY || "";
 
 module.exports = ({ config }) => ({
   ...config,
 
   extra: {
     ...config.extra,
-    EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: googleMapsApiKey,
+    GOOGLE_MAPS_ANDROID_API_KEY: androidGoogleMapsApiKey,
+    GOOGLE_MAPS_IOS_API_KEY: iosGoogleMapsApiKey,
   },
 
   android: {
@@ -22,8 +24,17 @@ module.exports = ({ config }) => ({
 
       googleMaps: {
         ...config.android?.config?.googleMaps,
-        apiKey: googleMapsApiKey,
+        apiKey: androidGoogleMapsApiKey,
       },
+    },
+  },
+
+  ios: {
+    ...config.ios,
+
+    config: {
+      ...config.ios?.config,
+      googleMapsApiKey: iosGoogleMapsApiKey,
     },
   },
 });

@@ -15,9 +15,13 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Allow SquarFT to use your camera for video calls and property media.",
         "NSMicrophoneUsageDescription": "Allow SquarFT to use your microphone for AI voice and video calls.",
-        "NSLocationWhenInUseUsageDescription": "Allow SquarFT to use your location to show nearby projects."
+        "NSLocationWhenInUseUsageDescription": "Allow SquarFT to use your location to show nearby projects.",
+        "ITSAppUsesNonExemptEncryption": false
       },
-      "bitcode": false
+      "bitcode": false,
+      "config": {
+        "googleMapsApiKey": ""
+      }
     },
     "android": {
       "googleServicesFile": "./app/google-services.json",
